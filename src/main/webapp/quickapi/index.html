@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>接口文档</title>
+    <link href="https://cdn.bootcss.com/spectre.css/0.5.8/spectre.min.css" rel="stylesheet">
+</head>
+<body ng-app="app" ng-cloak>
+<div class="container" ng-controller="indexController">
+    <div class="columns">
+        <div class="column col-4 col-auto">
+            <ul class="nav">
+                <li class="nav-item">
+                    <div>{{apiDocument.title}}</div>
+                    <div><span class="label label-success">{{apiDocument.date | date:'yyyy-MM-dd HH:mm:ss Z'}}</span></div>
+                </li>
+                <li class="nav-item">
+                    <div class="form-group">
+                        <input class="form-input" type="text" ng-model="searchText" placeholder="要查询的API">
+                    </div>
+                </li>
+                <li class="nav-item" ng-repeat="apiController in apiControllerList | filter:searchText">
+                    <span>{{apiController.tag}}</span>
+                    <ul class="nav">
+                        <li class="nav-item" ng-repeat="api in apiController.apiList | filter:searchText">
+                            <a class="c-hand" ng-click="setCurrentAPI(api);">
+                                {{api.brief}}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="column col-8" ng-show="currentAPI!=null" id="top">
+            <h3 class="m-2">{{currentAPI.brief}}</h3>
+            <div class="columns">
+                <div class="column col-auto col-1">
+                    <span class="label label-primary px-2" ng-repeat="method in currentAPI.methods">{{method}}</span>
+                </div>
+                <div class="column col-11">
+                    <span class="chip"><h6>{{currentAPI.url}}</h6></span>
+                </div>
+            </div>
+            <div class="columns">
+                <h3 class="m-2">请求参数</h3>
+                <table class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>参数名</th>
+                        <th>参数类型</th>
+                        <th>参数请求类型</th>
+                        <th>描述</th>
+                        <th>是否必须</th>
+                        <th>默认值</th>
+                        <th>参数值</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="apiParameter in currentAPI.apiParameters">
+                        <td>{{apiParameter.name}}</td>
+                        <td>{{apiParameter.type}}</td>
+                        <td>{{apiParameter.requestType}}</td>
+                        <td>{{apiParameter.description}}</td>
+                        <td>{{apiParameter.required}}</td>
+                        <td>{{apiParameter.defaultValue}}</td>
+                        <td ng-switch="apiParameter.requestType">
+                            <input class="form-input" ng-switch-when="text" type="text" ng-model="request[apiParameter.name]">
+                            <input class="form-input" ng-switch-when="file" type="file" id="{{apiParameter.name}}" ng-model="request[apiParameter.name]">
+                            <textarea ng-switch-when="textarea" class="form-input" ng-model="request[apiParameter.name]" rows="5"></textarea>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <h3 class="m-2">响应</h3>
+                <table class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>类名</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>{{currentAPI.returnValue}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="columns">
+                <button class="btn btn-primary m-2" ng-click="execute();">执行请求</button>
+                <div class="loading loading-lg" ng-show="loading"></div>
+            </div>
+            <div class="columns" ng-show="response!=null">
+                <div class="columns col-12">
+                    <div class="column col-auto col-1">
+                        <span class="label label-success px-2" ng-show="response.status<400||response.status>500">{{response.status}}</span>
+                        <span class="label label-error px-2" ng-show="response.status>=400&&response.status<600">{{response.status}}</span>
+                    </div>
+                    <div class="column col-11">
+                        <h5>{{response.statusText}}</h5>
+                    </div>
+                </div>
+                <h3 class="m-2">返回头部</h3>
+                <div class="columns col-12">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                        <tr>
+                            <th>头部</th>
+                            <th>值</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="(key,val) in response.config.headers">
+                            <td>{{key}}</td>
+                            <td>{{val}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 class="m-2">返回体</h3>
+                <div class="columns col-12">
+                    <pre>{{responseJSON}}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://cdn.bootcss.com/angular.js/1.7.8/angular.min.js"></script>
+<script src="index.js"></script>
+</html>
