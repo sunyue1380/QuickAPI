@@ -123,14 +123,6 @@ public class ReflectionUtil {
         return apiControllerList;
     }
 
-//    private static JSONObject getReturnValue(Class _class){
-//        JSONObject o = new JSONObject();
-//        if(_class.isPrimitive()){
-//        }
-//        return null;
-////        _class.getGenericSuperclass().getTypeName();
-//    }
-
     /**提取请求参数相关信息*/
     private static APIParameter[] handleParameter(API api,Method method){
         Parameter[] parameters = method.getParameters();

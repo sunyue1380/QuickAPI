@@ -34,6 +34,11 @@ public class QuickAPI{
         return this;
     }
 
+    public QuickAPI url(String url){
+        QuickAPIConfig.url = url;
+        return this;
+    }
+
     public QuickAPI ignorePackageName(String ignorePackageName){
         if(QuickAPIConfig.ignorePackageNameList==null){
             QuickAPIConfig.ignorePackageNameList = new ArrayList<>();
@@ -66,7 +71,7 @@ public class QuickAPI{
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = apiControllerList;
                 String data = JSON.toJSONString(apiDocument);
-                File file = new File("./src/main/webapp/quickapi/api.json");
+                File file = new File("./src/main/webapp"+QuickAPIConfig.url+"/api.json");
                 generateFile(data,file);
             }
             //复制静态资源文件
@@ -84,8 +89,9 @@ public class QuickAPI{
                             JarEntry jarEntry = jarEntryEnumeration.nextElement();
                             if(jarEntry.getName().endsWith("html")||jarEntry.getName().endsWith("js")){
                                 InputStream inputStream = jarFile.getInputStream(jarEntry);
-                                File file = new File("./src/main/webapp/"+jarEntry.getName());
-                                System.out.println(file.getAbsolutePath());
+                                String name = jarEntry.getName();
+                                name = name.substring(name.lastIndexOf("/"));
+                                File file = new File("./src/main/webapp"+QuickAPIConfig.url+name);
                                 generateFile(inputStream,file.getAbsolutePath());
                             }
                         }

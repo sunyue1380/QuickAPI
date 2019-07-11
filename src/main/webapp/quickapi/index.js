@@ -1,9 +1,10 @@
 let app = angular.module("app",[]);
 
+
 app.controller("indexController",function($scope,$http,$httpParamSerializer,$location,$anchorScroll){
     $scope.apiDocument = {};
     $scope.apiControllerList = [];
-    $http.get("/quickapi/api.json").then(function(response){
+    $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json").then(function(response){
         $scope.apiDocument = response.data;
         $scope.apiControllerList = $scope.apiDocument.apiControllerList;
     });

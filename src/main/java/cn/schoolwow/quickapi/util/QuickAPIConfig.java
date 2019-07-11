@@ -7,6 +7,8 @@ import java.util.function.Predicate;
 public class QuickAPIConfig {
     /**接口文档标题*/
     public static String title = "QuickAPI";
+    /**接口文档路径*/
+    public static String url = "/quickapi";
     /**要扫描的包名*/
     public static List<String> packageNames = new ArrayList<>();
     /**要忽略的类*/

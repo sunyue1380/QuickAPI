@@ -8,6 +8,7 @@ public class QuickAPITest {
     public void build() {
         QuickAPI.newInstance()
                 .scan("cn.schoolwow.quickapi.controller")
+                .url("/docs")
                 .generate();
     }
 }
