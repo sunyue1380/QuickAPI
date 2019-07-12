@@ -1,8 +1,9 @@
-package cn.schoolwow.quickapi.util;
+package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.domain.*;
+import cn.schoolwow.quickapi.util.JavaDocReader;
+import cn.schoolwow.quickapi.util.PackageUtil;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.ParamTag;
@@ -12,27 +13,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Stack;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.*;
 
-public class ReflectionUtil {
-    private static Logger logger = LoggerFactory.getLogger(ReflectionUtil.class);
+public class ControllerHandler {
+    private static Logger logger = LoggerFactory.getLogger(ControllerHandler.class);
     private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
 
     /**扫描控制类提取接口信息*/
-    public static List<APIController> getAPIList(List<Class> classList){
+    public static List<APIController> getAPIList() throws Exception {
+        List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
         List<APIController> apiControllerList = new ArrayList<>();
+        Map<String,APIEntity> apiEntityMap = EntityHandler.getEntityList();
         for(Class _class:classList){
             String baseUrl = "";
             RequestMapping classRequestMapping = (RequestMapping) _class.getDeclaredAnnotation(RequestMapping.class);
@@ -40,7 +35,7 @@ public class ReflectionUtil {
                 baseUrl = classRequestMapping.value()[0];
             }
             APIController apiController = new APIController();
-            apiController.className = _class.getSimpleName();
+            apiController.className = _class.getName();
             apiController.tag = _class.getSimpleName();
 
             List<API> apiList = new ArrayList<>();
@@ -66,7 +61,7 @@ public class ReflectionUtil {
                 api.url = baseUrl+methodRequestMapping.value()[0];
                 //处理请求参数
                 api.apiParameters = handleParameter(api,method);
-                api.returnValue = method.getGenericReturnType().getTypeName();
+                handleReturnValue(api,method,apiEntityMap);
                 apiList.add(api);
             }
             if(apiList.size()==0){
@@ -77,10 +72,10 @@ public class ReflectionUtil {
         }
         //处理注释
         {
-            ClassDoc[] classDocs = JavaDocReader.extractJavaDoc();
+            ClassDoc[] classDocs = JavaDocReader.getControllerJavaDoc();
             for(APIController apiController:apiControllerList){
                 for(ClassDoc classDoc:classDocs){
-                    if(apiController.className.equals(classDoc.name())){
+                    if(apiController.className.equals(classDoc.qualifiedName())){
                         //获取tag
                         {
                             Tag[] tags = classDoc.tags("tag");
@@ -186,92 +181,36 @@ public class ReflectionUtil {
         return apiParameterList.toArray(new APIParameter[0]);
     }
 
-    /**扫描用户指定包中的类*/
-    public static List<Class> scanPackageList() throws Exception{
-        List<Class> classList = new ArrayList<>();
-        for(String packageName:QuickAPIConfig.packageNames){
-            String packageNamePath = packageName.replace(".", "/");
-            Enumeration<URL> urlEnumeration = Thread.currentThread().getContextClassLoader().getResources(packageNamePath);
-            while(urlEnumeration.hasMoreElements()){
-                URL url = urlEnumeration.nextElement();
-                if(url==null){
-                    continue;
-                }
-                switch (url.getProtocol()) {
-                    case "file": {
-                        File file = new File(url.getFile());
-                        //TODO 对于有空格或者中文路径会无法识别
-                        logger.info("[类文件路径]{}", file.getAbsolutePath());
-                        if (!file.isDirectory()) {
-                            throw new IllegalArgumentException("包名不是合法的文件夹!" + url.getFile());
-                        }
-                        Stack<File> stack = new Stack<>();
-                        stack.push(file);
-                        String indexOfString = packageName.replace(".", "/");
-                        while (!stack.isEmpty()) {
-                            file = stack.pop();
-                            for (File f : file.listFiles()) {
-                                if (f.isDirectory()) {
-                                    stack.push(f);
-                                } else if (f.isFile() && f.getName().endsWith(".class")) {
-                                    String path = f.getAbsolutePath().replace("\\", "/");
-                                    int startIndex = path.indexOf(indexOfString);
-                                    String className = path.substring(startIndex, path.length() - 6).replace("/", ".");
-                                    classList.add(Class.forName(className));
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    case "jar": {
-                        JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
-                        if (null != jarURLConnection) {
-                            JarFile jarFile = jarURLConnection.getJarFile();
-                            if (null != jarFile) {
-                                Enumeration<JarEntry> jarEntries = jarFile.entries();
-                                while (jarEntries.hasMoreElements()) {
-                                    JarEntry jarEntry = jarEntries.nextElement();
-                                    String jarEntryName = jarEntry.getName();
-                                    if (jarEntryName.contains(packageNamePath) && jarEntryName.endsWith(".class")) { //是否是类,是类进行加载
-                                        String className = jarEntryName.substring(0, jarEntryName.lastIndexOf(".")).replaceAll("/", ".");
-                                        classList.add(Class.forName(className));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
+    /**提取请求参数相关信息*/
+    private static void handleReturnValue(API api,Method method,Map<String,APIEntity> apiEntityMap){
+        api.returnValue = method.getGenericReturnType().getTypeName();
+        Set<APIEntity> apiEntitySet = new LinkedHashSet<>();
+        handleReturnEntity(method.getReturnType().getName(),apiEntitySet,apiEntityMap);
+        //处理泛型
+        {
+            Type genericReturnType = method.getGenericReturnType();
+            if(genericReturnType instanceof ParameterizedType){
+                Type[] types = ((ParameterizedType)genericReturnType).getActualTypeArguments();
+                for(Type type:types){
+                    handleReturnEntity(type.getTypeName(),apiEntitySet,apiEntityMap);
                 }
             }
         }
-        if (classList.size() == 0) {
-            logger.warn("[扫描实体类信息为空]");
-            return classList;
+        api.returnEntityList = apiEntitySet.toArray(new APIEntity[0]);
+    }
+
+    /**处理返回类实体*/
+    private static void handleReturnEntity(String className, Set<APIEntity> apiEntitySet, Map<String,APIEntity> apiEntityMap){
+        if(!apiEntityMap.containsKey(className)){
+            return;
         }
-        Stream<Class> stream = classList.stream().filter((_class)->{
-            boolean result = true;
-            //根据类过滤
-            if(QuickAPIConfig.ignoreClassList!=null){
-                if(QuickAPIConfig.ignoreClassList.contains(_class)){
-                    logger.warn("[忽略类名]类名:{}!",_class.getName());
-                    result = false;
-                }
+        APIEntity apiEntity = apiEntityMap.get(className);
+        apiEntitySet.add(apiEntity);
+        for(APIField apiField:apiEntity.apiFields){
+            APIEntity fieldEntity = apiEntityMap.get(apiField.className);
+            if(fieldEntity!=null){
+                apiEntitySet.add(fieldEntity);
             }
-            //根据包名过滤
-            if(QuickAPIConfig.ignorePackageNameList!=null){
-                for(String ignorePackageName:QuickAPIConfig.ignorePackageNameList){
-                    if(_class.getName().contains(ignorePackageName)){
-                        logger.warn("[忽略包名]包名:{}类名:{}",ignorePackageName,_class.getName());
-                        result = false;
-                    }
-                }
-            }
-            return result;
-        });
-        if(QuickAPIConfig.predicate!=null){
-            stream.filter(QuickAPIConfig.predicate);
         }
-        classList = stream.collect(Collectors.toList());
-        return classList;
     }
 }

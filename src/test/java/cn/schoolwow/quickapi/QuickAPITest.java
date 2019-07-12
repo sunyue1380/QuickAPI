@@ -7,8 +7,8 @@ public class QuickAPITest {
     @Test
     public void build() {
         QuickAPI.newInstance()
-                .scan("cn.schoolwow.quickapi.controller")
-                .url("/docs")
+                .controller("cn.schoolwow.quickapi.controller")
+                .entity("cn.schoolwow.quickapi.entity")
                 .generate();
     }
 }

@@ -17,4 +17,6 @@ public class API {
     public APIParameter[] apiParameters;
     /**返回值*/
     public String returnValue;
+    /**返回实体类信息*/
+    public APIEntity[] returnEntityList;
 }

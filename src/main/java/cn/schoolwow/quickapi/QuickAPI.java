@@ -2,11 +2,11 @@ package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
+import cn.schoolwow.quickapi.util.PackageUtil;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
-import cn.schoolwow.quickapi.util.ReflectionUtil;
+import cn.schoolwow.quickapi.handler.ControllerHandler;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.util.IOUtils;
-import org.springframework.util.FileCopyUtils;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -29,8 +29,13 @@ public class QuickAPI{
         return this;
     }
 
-    public QuickAPI scan(String packageName){
-        QuickAPIConfig.packageNames.add(packageName);
+    public QuickAPI controller(String packageName){
+        QuickAPIConfig.controllerPackageNameList.add(packageName);
+        return this;
+    }
+
+    public QuickAPI entity(String packageName){
+        QuickAPIConfig.entityPackageNameList.add(packageName);
         return this;
     }
 
@@ -64,22 +69,21 @@ public class QuickAPI{
         try {
             //生成API接口信息
             {
-                List<Class> classList = ReflectionUtil.scanPackageList();
-                List<APIController> apiControllerList = ReflectionUtil.getAPIList(classList);
+                List<APIController> apiControllerList = ControllerHandler.getAPIList();
                 APIDocument apiDocument = new APIDocument();
                 apiDocument.title = QuickAPIConfig.title;
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = apiControllerList;
-                String data = JSON.toJSONString(apiDocument);
+                String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 File file = new File("./src/main/webapp"+QuickAPIConfig.url+"/api.json");
                 generateFile(data,file);
             }
             //复制静态资源文件
             {
                 URL url = ClassLoader.getSystemResource("quickapi");
-                System.out.println(url.toString());
                 switch(url.getProtocol()){
                     case "file":{
+
                     };break;
                     case "jar":{
                         JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
@@ -87,12 +91,16 @@ public class QuickAPI{
                         Enumeration<JarEntry> jarEntryEnumeration = jarFile.entries();
                         while(jarEntryEnumeration.hasMoreElements()){
                             JarEntry jarEntry = jarEntryEnumeration.nextElement();
-                            if(jarEntry.getName().endsWith("html")||jarEntry.getName().endsWith("js")){
+                            if(
+                                    jarEntry.getName().endsWith(".html")||
+                                    jarEntry.getName().endsWith(".css")||
+                                    jarEntry.getName().endsWith(".js")
+                            ){
                                 InputStream inputStream = jarFile.getInputStream(jarEntry);
                                 String name = jarEntry.getName();
-                                name = name.substring(name.lastIndexOf("/"));
+                                name = name.substring(name.indexOf("/"));
                                 File file = new File("./src/main/webapp"+QuickAPIConfig.url+name);
-                                generateFile(inputStream,file.getAbsolutePath());
+                                generateFile(inputStream,file);
                             }
                         }
                     };break;
@@ -103,8 +111,11 @@ public class QuickAPI{
         }
     }
 
-    private void generateFile(InputStream inputStream,String filePath) throws IOException {
-        FileOutputStream fos = new FileOutputStream(filePath);
+    private void generateFile(InputStream inputStream,File file) throws IOException {
+        if(!file.getParentFile().exists()){
+            file.getParentFile().mkdirs();
+        }
+        FileOutputStream fos = new FileOutputStream(file.getAbsolutePath());
         byte[] bytes = new byte[8192];
         int length=-1;
         while((length=inputStream.read(bytes,0,bytes.length))!=-1){

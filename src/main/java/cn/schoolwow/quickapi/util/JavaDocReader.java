@@ -5,39 +5,58 @@ import com.sun.javadoc.RootDoc;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class JavaDocReader {
-    private static RootDoc root;
+    private static List<ClassDoc> classDocList = new ArrayList<>();
     public static class Doclet {
         public Doclet() {
         }
         public static boolean start(RootDoc root) {
-            JavaDocReader.root = root;
+            classDocList.addAll(Arrays.asList(root.classes()));
             return true;
         }
     }
-    public static ClassDoc[] extractJavaDoc() {
+    private static String classPath = null;
+    static{
         URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
         URL[] urls = urlClassLoader.getURLs();
         StringBuilder classPathBuilder = new StringBuilder();
         for(URL url:urls){
             classPathBuilder.append(url.getPath().substring(1)+";");
         }
+        classPath = classPathBuilder.toString();
+    }
 
-//        StringBuilder packageNameBuilder = new StringBuilder();
-//        for(String packageName:QuickAPIConfig.packageNames){
-//            packageNameBuilder.append(packageName);
-//        }
+    public static ClassDoc[] getControllerJavaDoc(){
+        classDocList.clear();
+        for(String packageName:QuickAPIConfig.controllerPackageNameList){
+            getJavaDoc(classPath,packageName);
+        }
+        return classDocList.toArray(new ClassDoc[0]);
+    }
+
+    public static ClassDoc[] getEntityJavaDoc() {
+        classDocList.clear();
+        for(String packageName:QuickAPIConfig.entityPackageNameList){
+            getJavaDoc(classPath,packageName);
+        }
+        return classDocList.toArray(new ClassDoc[0]);
+    }
+
+    private static void getJavaDoc(String classPath,String packageName){
         com.sun.tools.javadoc.Main.execute(new String[] {"-doclet",
                 Doclet.class.getName(),
                 "-encoding","utf-8",
+                "-private",
                 "-quiet",
                 "-classpath",
-                classPathBuilder.toString(),
+                classPath,
                 "-sourcepath",
                 System.getProperty("user.dir")+"/src/main/java",
-                QuickAPIConfig.packageNames.get(0)
+                packageName
         });
-        return root.classes();
     }
 }

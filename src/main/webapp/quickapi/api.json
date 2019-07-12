@@ -1,0 +1,225 @@
+{
+  "apiControllerList": [
+    {
+      "apiList": [
+        {
+          "apiParameters": [
+            {
+              "defaultValue": "",
+              "description": "用户名",
+              "name": "username",
+              "position": "body",
+              "requestType": "text",
+              "required": true,
+              "type": "java.lang.String"
+            },
+            {
+              "defaultValue": "",
+              "description": "密码",
+              "name": "password",
+              "position": "body",
+              "requestType": "text",
+              "required": true,
+              "type": "java.lang.String"
+            }
+          ],
+          "brief": "用户注册",
+          "contentType": "application/x-www-form-urlencoded",
+          "description": "",
+          "methodName": "register",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [],
+          "returnValue": "java.lang.String",
+          "url": "/index/register"
+        },
+        {
+          "apiParameters": [
+            {
+              "defaultValue": "",
+              "description": "查询条件",
+              "name": "user",
+              "position": "body",
+              "requestType": "textarea",
+              "required": true,
+              "type": "cn.schoolwow.quickapi.entity.User"
+            }
+          ],
+          "brief": "用户查询",
+          "contentType": "application/json; charset=utf-8",
+          "description": "",
+          "methodName": "query",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [],
+          "returnValue": "java.lang.String",
+          "url": "/index/query"
+        },
+        {
+          "apiParameters": [
+            {
+              "defaultValue": "",
+              "description": "用户名",
+              "name": "username",
+              "position": "body",
+              "requestType": "text",
+              "required": true,
+              "type": "java.lang.String"
+            },
+            {
+              "defaultValue": "",
+              "description": "密码",
+              "name": "password",
+              "position": "body",
+              "requestType": "text",
+              "required": true,
+              "type": "java.lang.String"
+            }
+          ],
+          "brief": "用户登录",
+          "contentType": "application/x-www-form-urlencoded",
+          "description": "",
+          "methodName": "login",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [
+            {
+              "apiFields": [
+                {
+                  "className": "long",
+                  "description": "自增id",
+                  "name": "id"
+                },
+                {
+                  "className": "java.lang.String",
+                  "description": "用户名",
+                  "name": "username"
+                },
+                {
+                  "className": "java.lang.String",
+                  "description": "密码",
+                  "name": "password"
+                }
+              ],
+              "className": "cn.schoolwow.quickapi.entity.User",
+              "description": "用户表",
+              "simpleName": "User"
+            }
+          ],
+          "returnValue": "cn.schoolwow.quickapi.entity.User",
+          "url": "/index/login"
+        },
+        {
+          "apiParameters": [],
+          "brief": "泛型查询",
+          "contentType": "application/x-www-form-urlencoded",
+          "description": "",
+          "methodName": "parameterized",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [
+            {
+              "apiFields": [
+                {
+                  "className": "long",
+                  "description": "自增id",
+                  "name": "id"
+                },
+                {
+                  "className": "java.lang.String",
+                  "description": "老师名字",
+                  "name": "name"
+                },
+                {
+                  "className": "java.lang.Object",
+                  "description": "学生",
+                  "name": "user"
+                }
+              ],
+              "className": "cn.schoolwow.quickapi.entity.Teacher",
+              "description": "教师表",
+              "simpleName": "Teacher"
+            },
+            {
+              "apiFields": [
+                {
+                  "className": "long",
+                  "description": "自增id",
+                  "name": "id"
+                },
+                {
+                  "className": "java.lang.String",
+                  "description": "用户名",
+                  "name": "username"
+                },
+                {
+                  "className": "java.lang.String",
+                  "description": "密码",
+                  "name": "password"
+                }
+              ],
+              "className": "cn.schoolwow.quickapi.entity.User",
+              "description": "用户表",
+              "simpleName": "User"
+            }
+          ],
+          "returnValue": "cn.schoolwow.quickapi.entity.Teacher<cn.schoolwow.quickapi.entity.User>",
+          "url": "/index/parameterized"
+        },
+        {
+          "apiParameters": [
+            {
+              "defaultValue": "",
+              "description": "查询条件",
+              "name": "userId",
+              "position": "query",
+              "requestType": "text",
+              "required": true,
+              "type": "long"
+            }
+          ],
+          "brief": "Restful查询",
+          "contentType": "application/x-www-form-urlencoded",
+          "description": "",
+          "methodName": "restful",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [],
+          "returnValue": "java.lang.String",
+          "url": "/index/user/{userId}"
+        },
+        {
+          "apiParameters": [
+            {
+              "defaultValue": "",
+              "name": "file",
+              "position": "body",
+              "requestType": "file",
+              "required": false,
+              "type": "org.springframework.web.multipart.MultipartFile"
+            }
+          ],
+          "brief": "上传",
+          "contentType": "multipart/form-data;",
+          "description": "",
+          "methodName": "upload",
+          "methods": [
+            "all"
+          ],
+          "returnEntityList": [],
+          "returnValue": "java.lang.String",
+          "url": "/index/upload"
+        }
+      ],
+      "className": "cn.schoolwow.quickapi.controller.IndexController",
+      "tag": "首页"
+    }
+  ],
+  "date": 1562916682652,
+  "title": "QuickAPI"
+}

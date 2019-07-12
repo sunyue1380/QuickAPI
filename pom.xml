@@ -49,16 +49,19 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.38</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>4.0.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
             <version>4.3.8.RELEASE</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>cn.schoolwow</groupId>
@@ -71,7 +74,7 @@
             <artifactId>tools</artifactId>
             <version>1.8</version>
             <scope>system</scope>
-            <systemPath>C:/Program Files/Java/jdk1.8.0_144/lib/tools.jar</systemPath>
+            <systemPath>${env.JAVA_HOME}/lib/tools.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -91,9 +94,11 @@
                 <configuration>
                     <includes>
                         <include>**/domain/*</include>
+                        <include>**/handler/*</include>
                         <include>**/util/*</include>
                         <include>**/QuickAPI.class</include>
                         <include>**/*.html</include>
+                        <include>**/*.css</include>
                         <include>**/*.js</include>
                     </includes>
                 </configuration>
@@ -104,6 +109,7 @@
                 <directory>src/main/webapp</directory>
                 <includes>
                     <include>**/*.html</include>
+                    <include>**/*.css</include>
                     <include>**/*.js</include>
                 </includes>
             </resource>
