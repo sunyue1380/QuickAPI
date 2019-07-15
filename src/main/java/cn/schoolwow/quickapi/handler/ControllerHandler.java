@@ -22,12 +22,13 @@ import java.util.*;
 public class ControllerHandler {
     private static Logger logger = LoggerFactory.getLogger(ControllerHandler.class);
     private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
+    private static Map<String,APIEntity> apiEntityMap = EntityHandler.getEntityList();
 
     /**扫描控制类提取接口信息*/
-    public static List<APIController> getAPIList() throws Exception {
+    public static List<APIController> getAPIList(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
         List<APIController> apiControllerList = new ArrayList<>();
-        Map<String,APIEntity> apiEntityMap = EntityHandler.getEntityList();
+
         for(Class _class:classList){
             String baseUrl = "";
             RequestMapping classRequestMapping = (RequestMapping) _class.getDeclaredAnnotation(RequestMapping.class);
@@ -35,9 +36,15 @@ public class ControllerHandler {
                 baseUrl = classRequestMapping.value()[0];
             }
             APIController apiController = new APIController();
-            apiController.className = _class.getName();
-            apiController.tag = _class.getSimpleName();
-
+            //处理apiController
+            {
+                Deprecated deprecated = (Deprecated) _class.getDeclaredAnnotation(Deprecated.class);
+                if(deprecated!=null){
+                    apiController.deprecated = true;
+                }
+                apiController.className = _class.getName();
+                apiController.tag = _class.getSimpleName();
+            }
             List<API> apiList = new ArrayList<>();
             for(Method method:_class.getDeclaredMethods()){
                 RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
@@ -45,6 +52,10 @@ public class ControllerHandler {
                     continue;
                 }
                 API api = new API();
+                Deprecated deprecated = method.getDeclaredAnnotation(Deprecated.class);
+                if(deprecated!=null){
+                    api.deprecated = true;
+                }
                 api.methodName = method.getName();
                 api.brief = api.methodName;
                 //处理请求方法
@@ -61,7 +72,7 @@ public class ControllerHandler {
                 api.url = baseUrl+methodRequestMapping.value()[0];
                 //处理请求参数
                 api.apiParameters = handleParameter(api,method);
-                handleReturnValue(api,method,apiEntityMap);
+                handleReturnValue(api,method);
                 apiList.add(api);
             }
             if(apiList.size()==0){
@@ -182,17 +193,17 @@ public class ControllerHandler {
     }
 
     /**提取请求参数相关信息*/
-    private static void handleReturnValue(API api,Method method,Map<String,APIEntity> apiEntityMap){
+    private static void handleReturnValue(API api,Method method){
         api.returnValue = method.getGenericReturnType().getTypeName();
         Set<APIEntity> apiEntitySet = new LinkedHashSet<>();
-        handleReturnEntity(method.getReturnType().getName(),apiEntitySet,apiEntityMap);
+        handleReturnEntity(method.getReturnType().getName(),apiEntitySet);
         //处理泛型
         {
             Type genericReturnType = method.getGenericReturnType();
             if(genericReturnType instanceof ParameterizedType){
                 Type[] types = ((ParameterizedType)genericReturnType).getActualTypeArguments();
                 for(Type type:types){
-                    handleReturnEntity(type.getTypeName(),apiEntitySet,apiEntityMap);
+                    handleReturnEntity(type.getTypeName(),apiEntitySet);
                 }
             }
         }
@@ -200,17 +211,31 @@ public class ControllerHandler {
     }
 
     /**处理返回类实体*/
-    private static void handleReturnEntity(String className, Set<APIEntity> apiEntitySet, Map<String,APIEntity> apiEntityMap){
+    private static void handleReturnEntity(String className, Set<APIEntity> apiEntitySet){
         if(!apiEntityMap.containsKey(className)){
             return;
         }
-        APIEntity apiEntity = apiEntityMap.get(className);
-        apiEntitySet.add(apiEntity);
-        for(APIField apiField:apiEntity.apiFields){
-            APIEntity fieldEntity = apiEntityMap.get(apiField.className);
-            if(fieldEntity!=null){
-                apiEntitySet.add(fieldEntity);
+        Stack<APIEntity> apiEntityStack = new Stack<>();
+        apiEntityStack.push(apiEntityMap.get(className));
+        while(!apiEntityStack.isEmpty()){
+            APIEntity apiEntity = apiEntityStack.pop();
+            apiEntitySet.add(apiEntity);
+            for(APIField apiField:apiEntity.apiFields){
+                APIEntity fieldEntity = apiEntityMap.get(apiField.className);
+                if(fieldEntity!=null&&!hasRecycleDependency(fieldEntity,apiEntity)){
+                    apiEntityStack.push(fieldEntity);
+                }
             }
         }
+    }
+
+    private static boolean hasRecycleDependency(APIEntity fieldEntity,APIEntity parentEntity){
+        for(APIField apiField:fieldEntity.apiFields){
+            APIEntity subFieldEntity = apiEntityMap.get(apiField.className);
+            if(subFieldEntity!=null&&subFieldEntity==parentEntity){
+                return true;
+            }
+        }
+        return false;
     }
 }

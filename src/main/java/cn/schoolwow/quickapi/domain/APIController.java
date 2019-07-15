@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class APIController {
+    /**是否被废弃*/
+    public boolean deprecated;
     /**控制器*/
     public String tag;
     /**控制器类名*/

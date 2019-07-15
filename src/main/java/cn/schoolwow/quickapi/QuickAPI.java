@@ -2,9 +2,8 @@ package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
-import cn.schoolwow.quickapi.util.PackageUtil;
-import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickapi.handler.ControllerHandler;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 

@@ -18,7 +18,7 @@ public class EntityHandler {
     /**
      * 扫描实体类信息
      */
-    public static Map<String,APIEntity> getEntityList() throws Exception {
+    public static Map<String,APIEntity> getEntityList(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.entityPackageNameList.toArray(new String[0]));
         Map<String,APIEntity> apiEntityMap = new HashMap<>();
         for(Class _class:classList){

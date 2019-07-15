@@ -2,7 +2,6 @@ package cn.schoolwow.quickapi.controller;
 
 import cn.schoolwow.quickapi.entity.Teacher;
 import cn.schoolwow.quickapi.entity.User;
-import cn.schoolwow.quickdao.domain.PageVo;
 import com.alibaba.fastjson.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,8 +94,18 @@ public class IndexController {
     @RequestMapping("/parameterized")
     @ResponseBody
     public Teacher<User> parameterized(
-
     ){
         return new Teacher<>();
+    }
+
+    /**
+     * @brief 废弃接口
+     * */
+    @RequestMapping("/deprecated")
+    @ResponseBody
+    @Deprecated
+    public void deprecated(
+    ){
+        System.out.println("废弃接口被调用!");
     }
 }

@@ -1,6 +1,8 @@
 package cn.schoolwow.quickapi.domain;
 
 public class API {
+    /**是否被废弃*/
+    public boolean deprecated;
     /**请求方法*/
     public String[] methods;
     /**请求地址*/

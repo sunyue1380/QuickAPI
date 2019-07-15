@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>接口文档</title>
     <link href="css/spetre.min.css" rel="stylesheet">
+    <style>
+        .ng-cloak{display:none;}
+    </style>
 </head>
 <body ng-app="app" ng-cloak>
 <div class="container" ng-controller="indexController">
@@ -20,11 +23,13 @@
                     </div>
                 </li>
                 <li class="nav-item" ng-repeat="apiController in apiControllerList | filter:searchText">
-                    <span>{{apiController.tag}}</span>
+                    <s ng-show="apiController.deprecated">{{apiController.tag}}</s>
+                    <span ng-show="!apiController.deprecated">{{apiController.tag}}</span>
                     <ul class="nav">
                         <li class="nav-item" ng-repeat="api in apiController.apiList | filter:searchText">
                             <a class="c-hand" ng-click="setCurrentAPI(api);">
-                                {{api.brief}}
+                                <s ng-show="api.deprecated">{{api.brief}}</s>
+                                <span ng-show="!api.deprecated">{{api.brief}}</span>
                             </a>
                         </li>
                     </ul>
@@ -32,7 +37,15 @@
             </ul>
         </div>
         <div class="column col-8" ng-show="currentAPI!=null" id="top">
-            <h3 class="m-2">{{currentAPI.brief}}</h3>
+            <h3 class="m-2" ng-show="currentAPI.deprecated">
+                <s>{{currentAPI.brief}}</s>
+                <div class="toast toast-warning m-2">
+                    请注意:该接口已被废弃!
+                </div>
+            </h3>
+            <h3 ng-show="!currentAPI.deprecated">
+                <span>{{currentAPI.brief}}</span>
+            </h3>
             <div class="columns">
                 <div class="column col-auto col-1">
                     <span class="label label-primary px-2" ng-repeat="method in currentAPI.methods">{{method}}</span>
