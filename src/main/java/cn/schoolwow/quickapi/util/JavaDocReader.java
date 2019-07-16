@@ -2,6 +2,8 @@ package cn.schoolwow.quickapi.util;
 
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.RootDoc;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -10,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class JavaDocReader {
+    private static Logger logger = LoggerFactory.getLogger(JavaDocReader.class);
     private static List<ClassDoc> classDocList = new ArrayList<>();
     public static class Doclet {
         public Doclet() {
@@ -47,7 +50,7 @@ public class JavaDocReader {
     }
 
     private static void getJavaDoc(String classPath,String packageName){
-        com.sun.tools.javadoc.Main.execute(new String[] {"-doclet",
+        String[] commands = {"-doclet",
                 Doclet.class.getName(),
                 "-encoding","utf-8",
                 "-private",
@@ -56,7 +59,8 @@ public class JavaDocReader {
                 classPath,
                 "-sourcepath",
                 System.getProperty("user.dir")+"/src/main/java",
-                packageName
-        });
+                "-subpackages",
+                packageName};
+        com.sun.tools.javadoc.Main.execute(commands);
     }
 }

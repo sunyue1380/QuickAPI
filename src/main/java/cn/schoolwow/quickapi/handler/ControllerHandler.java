@@ -13,16 +13,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
 import java.util.*;
 
 public class ControllerHandler {
     private static Logger logger = LoggerFactory.getLogger(ControllerHandler.class);
     private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
     private static Map<String,APIEntity> apiEntityMap = EntityHandler.getEntityList();
+    private static Class[] mappingClasses = new Class[]{
+            GetMapping.class,PostMapping.class,PutMapping.class,DeleteMapping.class,PatchMapping.class
+    };
 
     /**扫描控制类提取接口信息*/
     public static List<APIController> getAPIList(){
@@ -45,31 +46,24 @@ public class ControllerHandler {
                 apiController.className = _class.getName();
                 apiController.tag = _class.getSimpleName();
             }
+            //处理api
             List<API> apiList = new ArrayList<>();
             for(Method method:_class.getDeclaredMethods()){
-                RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
-                if(methodRequestMapping==null){
-                    continue;
-                }
                 API api = new API();
-                Deprecated deprecated = method.getDeclaredAnnotation(Deprecated.class);
-                if(deprecated!=null){
-                    api.deprecated = true;
-                }
                 api.methodName = method.getName();
                 api.brief = api.methodName;
-                //处理请求方法
-                RequestMethod[] requestMethods = methodRequestMapping.method();
-                if(requestMethods.length>0){
-                    api.methods = new String[requestMethods.length];
-                    for(int i=0;i<requestMethods.length;i++){
-                        api.methods[i] = requestMethods[i].name().toUpperCase();
+                //deprecate
+                {
+                    Deprecated deprecated = method.getDeclaredAnnotation(Deprecated.class);
+                    if(deprecated!=null){
+                        api.deprecated = true;
                     }
-                }else{
-                    api.methods = new String[]{"all"};
                 }
-                //处理请求路径
-                api.url = baseUrl+methodRequestMapping.value()[0];
+                //处理请求方法和映射路径
+                handleRequestMapping(method,api,baseUrl);
+                if(api.url==null){
+                    continue;
+                }
                 //处理请求参数
                 api.apiParameters = handleParameter(api,method);
                 handleReturnValue(api,method);
@@ -127,6 +121,41 @@ public class ControllerHandler {
             }
         }
         return apiControllerList;
+    }
+
+    /**提取请求路径*/
+    private static void handleRequestMapping(Method method,API api,String baseUrl) {
+        for(Class _class:mappingClasses){
+            Annotation annotation = method.getDeclaredAnnotation(_class);
+            if(annotation==null){
+                continue;
+            }
+            String requestMethod = _class.getSimpleName().substring(0,_class.getSimpleName().lastIndexOf("Mapping"));
+            api.methods = new String[]{requestMethod};
+            try {
+                String[] values = (String[]) _class.getDeclaredMethod("value").invoke(annotation);
+                api.url = baseUrl+values[0];
+            }catch (Exception e){
+                continue;
+            }
+            return;
+        }
+        RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
+        if(methodRequestMapping==null){
+            return;
+        }
+        //处理请求方法
+        RequestMethod[] requestMethods = methodRequestMapping.method();
+        if(requestMethods.length>0){
+            api.methods = new String[requestMethods.length];
+            for(int i=0;i<requestMethods.length;i++){
+                api.methods[i] = requestMethods[i].name().toUpperCase();
+            }
+        }else{
+            api.methods = new String[]{"all"};
+        }
+        //处理请求路径
+        api.url = baseUrl+methodRequestMapping.value()[0];
     }
 
     /**提取请求参数相关信息*/
