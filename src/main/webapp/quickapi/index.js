@@ -41,7 +41,7 @@ app.controller("indexController",function($scope,$http,$httpParamSerializer,$loc
                 }
             }else{
                 let value = $scope.request[apiParameter.name];
-                if(apiParameter.required&&typeof(value)=="undefined"||value===""){
+                if(apiParameter.required&&(typeof(value)=="undefined"||value==="")){
                     alert("请填写必填项:"+apiParameter.name);
                     return;
                 }
