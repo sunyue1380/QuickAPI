@@ -4,8 +4,11 @@ import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
 import cn.schoolwow.quickapi.handler.ControllerHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import cn.schoolwow.quickdao.util.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -19,27 +22,44 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class QuickAPI{
+    private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
     public static QuickAPI newInstance(){
         return new QuickAPI();
     }
 
+    /*文档标题*/
     public QuickAPI title(String title){
         QuickAPIConfig.title = title;
         return this;
     }
 
+    /**controller层*/
     public QuickAPI controller(String packageName){
         QuickAPIConfig.controllerPackageNameList.add(packageName);
         return this;
     }
 
+    /**Controller涉及的实体类层*/
     public QuickAPI entity(String packageName){
         QuickAPIConfig.entityPackageNameList.add(packageName);
         return this;
     }
 
+    /**文档路径地址*/
     public QuickAPI url(String url){
         QuickAPIConfig.url = url;
+        return this;
+    }
+
+    /**文档生成目录*/
+    public QuickAPI directory(String directory){
+        QuickAPIConfig.directory = directory;
+        return this;
+    }
+
+    /**Java源代码路径*/
+    public QuickAPI sourcePath(String sourcePath){
+        QuickAPIConfig.sourcePath = sourcePath;
         return this;
     }
 
@@ -66,6 +86,12 @@ public class QuickAPI{
 
     public void generate(){
         try {
+            Class.forName("cn.schoolwow.quickdao.annotation.Comment");
+            QuickAPIConfig.existQuickDAO = true;
+        } catch (ClassNotFoundException e) {
+            QuickAPIConfig.existQuickDAO = false;
+        }
+        try {
             //生成API接口信息
             {
                 List<APIController> apiControllerList = ControllerHandler.getAPIList();
@@ -74,7 +100,8 @@ public class QuickAPI{
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = apiControllerList;
                 String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
-                File file = new File("./src/main/webapp"+QuickAPIConfig.url+"/api.json");
+                File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
+                logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
                 generateFile(data,file);
             }
             //复制静态资源文件
@@ -98,7 +125,7 @@ public class QuickAPI{
                                 InputStream inputStream = jarFile.getInputStream(jarEntry);
                                 String name = jarEntry.getName();
                                 name = name.substring(name.indexOf("/"));
-                                File file = new File("./src/main/webapp"+QuickAPIConfig.url+name);
+                                File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+name);
                                 generateFile(inputStream,file);
                             }
                         }

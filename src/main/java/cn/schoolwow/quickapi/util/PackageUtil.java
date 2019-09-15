@@ -19,6 +19,16 @@ import java.util.stream.Stream;
 public class PackageUtil {
     private static Logger logger = LoggerFactory.getLogger(PackageUtil.class);
 
+    /**是否是实体类包中的类 */
+    public static boolean isInEntityPackage(String className){
+        for(String packageName:QuickAPIConfig.entityPackageNameList){
+            if(className.startsWith(packageName)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**扫描用户指定包中的类*/
     public static List<Class> scanPackage(String... packageNames){
         List<Class> classList = new ArrayList<>();

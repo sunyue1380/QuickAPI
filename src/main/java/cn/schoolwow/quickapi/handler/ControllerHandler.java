@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -164,10 +165,28 @@ public class ControllerHandler {
         String[] parameterNames = u.getParameterNames(method);
         List<APIParameter> apiParameterList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
+            Class parameterType = parameters[i].getType();
             //排除特定类型的参数
-            if(parameters[i].getType().getName().startsWith("javax.servlet")){
+            if(parameterType.getName().startsWith("javax.servlet")){
                 continue;
             }
+            //处理复杂对象
+            if(PackageUtil.isInEntityPackage(parameterType.getName())){
+                for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
+                    APIParameter apiParameter = new APIParameter();
+                    apiParameter.name = apiField.name;
+                    apiParameter.description = apiField.description;
+                    apiParameter.required = false;
+                    apiParameter.type = apiField.className;
+                    if(apiParameter.type.equals(MultipartFile.class.getName())){
+                        apiParameter.requestType = "file";
+                        api.contentType = "multipart/form-data;";
+                    }
+                    apiParameterList.add(apiParameter);
+                }
+                continue;
+            }
+
             APIParameter apiParameter = new APIParameter();
             //RequestParam
             {
@@ -186,7 +205,7 @@ public class ControllerHandler {
             //RequestPart
             {
                 RequestPart requestPart = parameters[i].getAnnotation(RequestPart.class);
-                if(requestPart!=null){
+                if(requestPart!=null||parameterType.getName().equals(MultipartFile.class.getName())){
                     apiParameter.name = requestPart.value();
                     if(apiParameter.name.isEmpty()){
                         apiParameter.name = requestPart.name();

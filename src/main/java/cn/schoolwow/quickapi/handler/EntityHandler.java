@@ -27,9 +27,11 @@ public class EntityHandler {
             {
                 apiEntity.className = _class.getName();
                 apiEntity.simpleName = _class.getSimpleName();
-                Comment comment = (Comment) _class.getAnnotation(Comment.class);
-                if(comment!=null){
-                    apiEntity.description = comment.value();
+                if(QuickAPIConfig.existQuickDAO){
+                    Comment comment = (Comment) _class.getAnnotation(Comment.class);
+                    if(comment!=null){
+                        apiEntity.description = comment.value();
+                    }
                 }
             }
             //处理字段
@@ -41,9 +43,11 @@ public class EntityHandler {
                     APIField apiField = new APIField();
                     apiField.name = fields[i].getName();
                     apiField.className = fields[i].getType().getName();
-                    Comment comment = fields[i].getAnnotation(Comment.class);
-                    if(comment!=null){
-                        apiField.description = comment.value();
+                    if(QuickAPIConfig.existQuickDAO){
+                        Comment comment = fields[i].getAnnotation(Comment.class);
+                        if(comment!=null){
+                            apiField.description = comment.value();
+                        }
                     }
                     apiFields[i] = apiField;
                 }

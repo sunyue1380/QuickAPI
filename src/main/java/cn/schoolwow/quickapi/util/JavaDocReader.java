@@ -58,7 +58,7 @@ public class JavaDocReader {
                 "-classpath",
                 classPath,
                 "-sourcepath",
-                System.getProperty("user.dir")+"/src/main/java",
+                QuickAPIConfig.sourcePath,
                 "-subpackages",
                 packageName};
         com.sun.tools.javadoc.Main.execute(commands);

@@ -136,3 +136,4 @@ Icon
 !**/wrapper/*.jar
 
 *.exe
+src/main/webapp/quickapi/api.json
