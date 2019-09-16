@@ -2,9 +2,9 @@ package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
-import cn.schoolwow.quickapi.handler.ControllerHandler;
+import cn.schoolwow.quickapi.handler.QuickServerControllerHandler;
+import cn.schoolwow.quickapi.handler.SpringMVCControllerHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
-import cn.schoolwow.quickdao.util.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
@@ -85,6 +85,14 @@ public class QuickAPI{
     }
 
     public void generate(){
+        //检测Java
+        {
+            File file = new File(QuickAPIConfig.sourcePath);
+            if(!file.exists()){
+                logger.warn("[源路径不存在]JavaDoc无法提取!请配置正确的源路径地址!当前源路径:{}",QuickAPIConfig.sourcePath);
+            }
+        }
+        //检测环境
         try {
             Class.forName("cn.schoolwow.quickdao.annotation.Comment");
             QuickAPIConfig.existQuickDAO = true;
@@ -94,7 +102,7 @@ public class QuickAPI{
         try {
             //生成API接口信息
             {
-                List<APIController> apiControllerList = ControllerHandler.getAPIList();
+                List<APIController> apiControllerList = getAPIList();
                 APIDocument apiDocument = new APIDocument();
                 apiDocument.title = QuickAPIConfig.title;
                 apiDocument.date = new Date();
@@ -135,6 +143,23 @@ public class QuickAPI{
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private List<APIController> getAPIList(){
+        try {
+            Class.forName("cn.schoolwow.quickserver.request.RequestMeta");
+            logger.debug("[检测环境]检测到环境为QuickServer");
+            return new QuickServerControllerHandler().getAPIList();
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            Class.forName("org.springframework.web.bind.annotation.RequestMapping");
+            logger.debug("[检测环境]检测到环境为SpringMVC");
+            return new SpringMVCControllerHandler().getAPIList();
+        } catch (ClassNotFoundException e) {
+        }
+        logger.warn("[检测环境失败]QuickAPI目前只支持SpringMVC和QuickServer环境!");
+        throw new UnsupportedOperationException();
     }
 
     private void generateFile(InputStream inputStream,File file) throws IOException {

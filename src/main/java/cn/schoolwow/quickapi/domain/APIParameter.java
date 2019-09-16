@@ -13,7 +13,7 @@ public class APIParameter {
     /**描述*/
     public String description;
     /**是否必须*/
-    public boolean required;
+    public boolean required = true;
     /**默认值*/
     public String defaultValue = "";
 }
