@@ -2,8 +2,11 @@ package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
-import cn.schoolwow.quickapi.handler.QuickServerControllerHandler;
-import cn.schoolwow.quickapi.handler.SpringMVCControllerHandler;
+import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
+import cn.schoolwow.quickapi.handler.controller.ControllerHandler;
+import cn.schoolwow.quickapi.handler.controller.QuickServerControllerHandler;
+import cn.schoolwow.quickapi.handler.controller.SpringMVCControllerHandler;
+import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
@@ -13,10 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -63,6 +63,12 @@ public class QuickAPI{
         return this;
     }
 
+    /**文档描述*/
+    public QuickAPI description(String description){
+        QuickAPIConfig.description = description;
+        return this;
+    }
+
     public QuickAPI ignorePackageName(String ignorePackageName){
         if(QuickAPIConfig.ignorePackageNameList==null){
             QuickAPIConfig.ignorePackageNameList = new ArrayList<>();
@@ -92,21 +98,15 @@ public class QuickAPI{
                 logger.warn("[源路径不存在]JavaDoc无法提取!请配置正确的源路径地址!当前源路径:{}",QuickAPIConfig.sourcePath);
             }
         }
-        //检测环境
-        try {
-            Class.forName("cn.schoolwow.quickdao.annotation.Comment");
-            QuickAPIConfig.existQuickDAO = true;
-        } catch (ClassNotFoundException e) {
-            QuickAPIConfig.existQuickDAO = false;
-        }
         try {
             //生成API接口信息
             {
-                List<APIController> apiControllerList = getAPIList();
                 APIDocument apiDocument = new APIDocument();
                 apiDocument.title = QuickAPIConfig.title;
+                apiDocument.description = QuickAPIConfig.description;
                 apiDocument.date = new Date();
-                apiDocument.apiControllerList = apiControllerList;
+                apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
+                apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
                 String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
                 logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
@@ -143,23 +143,6 @@ public class QuickAPI{
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private List<APIController> getAPIList(){
-        try {
-            Class.forName("cn.schoolwow.quickserver.request.RequestMeta");
-            logger.debug("[检测环境]检测到环境为QuickServer");
-            return new QuickServerControllerHandler().getAPIList();
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName("org.springframework.web.bind.annotation.RequestMapping");
-            logger.debug("[检测环境]检测到环境为SpringMVC");
-            return new SpringMVCControllerHandler().getAPIList();
-        } catch (ClassNotFoundException e) {
-        }
-        logger.warn("[检测环境失败]QuickAPI目前只支持SpringMVC和QuickServer环境!");
-        throw new UnsupportedOperationException();
     }
 
     private void generateFile(InputStream inputStream,File file) throws IOException {

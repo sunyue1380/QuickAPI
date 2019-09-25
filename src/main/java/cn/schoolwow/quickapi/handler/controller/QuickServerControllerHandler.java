@@ -1,9 +1,14 @@
-package cn.schoolwow.quickapi.handler;
+package cn.schoolwow.quickapi.handler.controller;
 
 import cn.schoolwow.quickapi.domain.API;
+import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.util.PackageUtil;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
+import cn.schoolwow.quickserver.request.RequestMeta;
+import cn.schoolwow.quickserver.response.ResponseMeta;
+import cn.schoolwow.quickserver.session.SessionMeta;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -11,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QuickServerControllerHandler extends AbstractControllerHandler{
+    private static Class[] ignoreParameter = new Class[]{RequestMeta.class, ResponseMeta.class, SessionMeta.class};
     @Override
     public String getBaseUrl(Class _class) {
         String baseUrl = "";
@@ -43,11 +49,42 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
     public APIParameter[] handleParameter(Method method, API api) {
         Parameter[] parameters = method.getParameters();
         List<APIParameter> apiParameterList = new ArrayList<>();
+        List<String> parameterEntityNameList = new ArrayList<>();
         for(Parameter parameter:parameters){
             Class parameterType = parameter.getType();
             //排除特定类型的参数
-            if(parameterType.getName().startsWith("cn.schoolwow.quickserver")){
+            boolean ignore = false;
+            for(Class ignoreClass:ignoreParameter){
+                if(parameterType.getName().equals(ignoreClass.getName())){
+                    ignore = true;
+                    break;
+                }
+            }
+            if(ignore){
                 continue;
+            }
+            //处理复杂对象
+            if(PackageUtil.isInEntityPackage(parameterType.getName())){
+                if(null==parameter.getDeclaredAnnotation(org.springframework.web.bind.annotation.RequestBody.class)){
+                    for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
+                        if(apiField.ignore){
+                            continue;
+                        }
+                        APIParameter apiParameter = new APIParameter();
+                        apiParameter.name = apiField.name;
+                        apiParameter.description = apiField.description;
+                        apiParameter.required = false;
+                        apiParameter.type = apiField.className;
+                        if(apiParameter.type.equals(org.springframework.web.multipart.MultipartFile.class.getName())){
+                            apiParameter.requestType = "file";
+                            api.contentType = "multipart/form-data;";
+                        }
+                        apiParameterList.add(apiParameter);
+                    }
+                    continue;
+                }else{
+                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
+                }
             }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
@@ -79,6 +116,8 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
             {
                 RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
                 if(requestBody!=null){
+                    apiParameter.name = "requestBody";
+                    apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json; charset=utf-8";
                 }
@@ -96,7 +135,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                 }
             }
             if(apiParameter.name==null||apiParameter.name.isEmpty()){
-                apiParameter.name = parameter.getName();
+                continue;
             }
             apiParameter.type = parameter.getType().getName();
             apiParameterList.add(apiParameter);

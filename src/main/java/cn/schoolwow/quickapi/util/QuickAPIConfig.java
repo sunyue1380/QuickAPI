@@ -13,6 +13,8 @@ public class QuickAPIConfig {
     public static String directory = "./src/main/webapp";
     /**指定Java源代码路径*/
     public static String sourcePath = System.getProperty("user.dir")+"/src/main/java";
+    /**描述*/
+    public static String description = "";
     /**控制器包名*/
     public static List<String> controllerPackageNameList = new ArrayList<>();
     /**实体类包名*/
@@ -23,6 +25,4 @@ public class QuickAPIConfig {
     public static List<String> ignorePackageNameList;
     /**函数式接口过滤类*/
     public static Predicate<Class> predicate;
-    /**QuickDAO是否存在*/
-    public static boolean existQuickDAO;
 }

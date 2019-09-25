@@ -1,6 +1,7 @@
-package cn.schoolwow.quickapi.handler;
+package cn.schoolwow.quickapi.handler.controller;
 
 import cn.schoolwow.quickapi.domain.API;
+import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.domain.APIParameter;
 import cn.schoolwow.quickapi.util.PackageUtil;
@@ -37,7 +38,7 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             if(annotation==null){
                 continue;
             }
-            String requestMethod = _class.getSimpleName().substring(0,_class.getSimpleName().lastIndexOf("Mapping"));
+            String requestMethod = _class.getSimpleName().substring(0,_class.getSimpleName().lastIndexOf("Mapping")).toUpperCase();
             api.methods = new String[]{requestMethod};
             try {
                 String[] values = (String[]) _class.getDeclaredMethod("value").invoke(annotation);
@@ -68,27 +69,42 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
         Parameter[] parameters = method.getParameters();
         String[] parameterNames = u.getParameterNames(method);
         List<APIParameter> apiParameterList = new ArrayList<>();
+        List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
             //排除特定类型的参数
             if(parameterType.getName().startsWith("javax.servlet")){
                 continue;
             }
+            //SessionAttribute
+            {
+                SessionAttribute sessionAttribute = parameters[i].getAnnotation(SessionAttribute.class);
+                if(sessionAttribute!=null){
+                    continue;
+                }
+            }
             //处理复杂对象
             if(PackageUtil.isInEntityPackage(parameterType.getName())){
-                for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
-                    APIParameter apiParameter = new APIParameter();
-                    apiParameter.name = apiField.name;
-                    apiParameter.description = apiField.description;
-                    apiParameter.required = false;
-                    apiParameter.type = apiField.className;
-                    if(apiParameter.type.equals(MultipartFile.class.getName())){
-                        apiParameter.requestType = "file";
-                        api.contentType = "multipart/form-data;";
+                if(null==parameters[i].getDeclaredAnnotation(RequestBody.class)){
+                    for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
+                        if(apiField.ignore){
+                            continue;
+                        }
+                        APIParameter apiParameter = new APIParameter();
+                        apiParameter.name = apiField.name;
+                        apiParameter.description = apiField.description;
+                        apiParameter.required = false;
+                        apiParameter.type = apiField.className;
+                        if(apiParameter.type.equals(MultipartFile.class.getName())){
+                            apiParameter.requestType = "file";
+                            api.contentType = "multipart/form-data;";
+                        }
+                        apiParameterList.add(apiParameter);
                     }
-                    apiParameterList.add(apiParameter);
+                    continue;
+                }else{
+                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
-                continue;
             }
 
             APIParameter apiParameter = new APIParameter();
@@ -123,6 +139,7 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             {
                 RequestBody requestBody = parameters[i].getAnnotation(RequestBody.class);
                 if(requestBody!=null){
+                    apiParameter.name = "requestBody";
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json; charset=utf-8";
@@ -146,6 +163,7 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             apiParameter.type = parameters[i].getType().getName();
             apiParameterList.add(apiParameter);
         }
+        api.parameterEntityNameList = parameterEntityNameList.toArray(new String[0]);
         return apiParameterList.toArray(new APIParameter[0]);
     }
 }

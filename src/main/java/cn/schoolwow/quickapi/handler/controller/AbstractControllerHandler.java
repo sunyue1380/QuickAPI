@@ -1,6 +1,7 @@
-package cn.schoolwow.quickapi.handler;
+package cn.schoolwow.quickapi.handler.controller;
 
 import cn.schoolwow.quickapi.domain.*;
+import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.JavaDocReader;
 import cn.schoolwow.quickapi.util.PackageUtil;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
@@ -8,7 +9,6 @@ import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.ParamTag;
 import com.sun.javadoc.Tag;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -16,18 +16,26 @@ import java.lang.reflect.Type;
 import java.util.*;
 
 public abstract class AbstractControllerHandler implements ControllerHandler{
-    protected static Map<String,APIEntity> apiEntityMap = EntityHandler.getEntityList();
+    protected static Map<String,APIEntity> apiEntityMap = AbstractEntityHandler.apiEntityMap;
+    public static List<APIController> apiControllerList = getApiControllerList();
 
-    @Override
-    public abstract String getBaseUrl(Class _class);
+    /**获取控制器列表*/
+    private static List<APIController> getApiControllerList(){
+        ControllerHandlerMapping[] controllerHandlerMappings = ControllerHandlerMapping.values();
+        for(ControllerHandlerMapping controllerHandlerMapping:controllerHandlerMappings){
+            try {
+                Class.forName(controllerHandlerMapping.className);
+                AbstractControllerHandler controllerHandler = (AbstractControllerHandler) controllerHandlerMapping._class.newInstance();
+                return controllerHandler.getAPIList();
+            } catch (ClassNotFoundException e) {
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        throw new UnsupportedOperationException("不支持的Controller层环境!");
+    }
 
-    @Override
-    public abstract void handleRequestMapping(Method method, API api);
-
-    @Override
-    public abstract APIParameter[] handleParameter(Method method, API api);
-
-    public List<APIController> getAPIList(){
+    private List<APIController> getAPIList(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
         List<APIController> apiControllerList = new ArrayList<>();
 
@@ -122,44 +130,62 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
         return apiControllerList;
     }
 
+    protected abstract String getBaseUrl(Class _class);
+
+    protected abstract void handleRequestMapping(Method method, API api);
+
+    protected abstract APIParameter[] handleParameter(Method method, API api);
+
     /**提取请求参数相关信息*/
     protected void handleReturnValue(API api, Method method){
         api.returnValue = method.getGenericReturnType().getTypeName();
-        Set<APIEntity> apiEntitySet = new LinkedHashSet<>();
-        handleReturnEntity(method.getReturnType().getName(),apiEntitySet);
+        Set<String> apiEntitySet = getRecycleEntity(method.getReturnType().getName());
         //处理泛型
         {
             Type genericReturnType = method.getGenericReturnType();
             if(genericReturnType instanceof ParameterizedType){
                 Type[] types = ((ParameterizedType)genericReturnType).getActualTypeArguments();
                 for(Type type:types){
-                    handleReturnEntity(type.getTypeName(),apiEntitySet);
+                    apiEntitySet.addAll(getRecycleEntity(type.getTypeName()));
                 }
             }
         }
-        api.returnEntityList = apiEntitySet.toArray(new APIEntity[0]);
+        api.returnEntityNameList = apiEntitySet.toArray(new String[0]);
     }
 
     /**处理返回类实体*/
-    protected void handleReturnEntity(String className, Set<APIEntity> apiEntitySet){
+    protected Set<String> getRecycleEntity(String className){
+        Set<String> apiEntitySet = new LinkedHashSet<>();
         if(!apiEntityMap.containsKey(className)){
-            return;
+            return apiEntitySet;
         }
-        Stack<APIEntity> apiEntityStack = new Stack<>();
-        apiEntityStack.push(apiEntityMap.get(className));
+        Stack<String> apiEntityStack = new Stack<>();
+        apiEntityStack.push(className);
         while(!apiEntityStack.isEmpty()){
-            APIEntity apiEntity = apiEntityStack.pop();
-            apiEntitySet.add(apiEntity);
+            String entityClassName = apiEntityStack.pop();
+            APIEntity apiEntity = apiEntityMap.get(entityClassName);
+            if(null==apiEntity){
+                continue;
+            }
+            apiEntitySet.add(entityClassName);
             for(APIField apiField:apiEntity.apiFields){
-                APIEntity fieldEntity = apiEntityMap.get(apiField.className);
-                if(fieldEntity!=null&&!hasRecycleDependency(fieldEntity,apiEntity)){
-                    apiEntityStack.push(fieldEntity);
+                String fieldClassName = apiField.className;
+                if(fieldClassName.startsWith("[L")){
+                    fieldClassName = fieldClassName.substring(2,fieldClassName.length()-1);
+                }
+                //TODO 处理List的类型
+                if(fieldClassName!=null&&!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)){
+                    apiEntityStack.push(fieldClassName);
                 }
             }
         }
+        return apiEntitySet;
     }
 
     private boolean hasRecycleDependency(APIEntity fieldEntity,APIEntity parentEntity){
+        if(null==fieldEntity){
+            return false;
+        }
         for(APIField apiField:fieldEntity.apiFields){
             APIEntity subFieldEntity = apiEntityMap.get(apiField.className);
             if(subFieldEntity!=null&&subFieldEntity==parentEntity){

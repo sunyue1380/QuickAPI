@@ -1,16 +1,66 @@
 let app = angular.module("app",[]);
-
-
-app.controller("indexController",function($scope,$http,$httpParamSerializer,$location,$anchorScroll){
+app.directive('entityTable',function(){
+    return {
+        restrict: 'AE',
+        replace: true,
+        templateUrl:"directive/entityTable.html",
+        scope:{
+            "entity":"=entity"
+        },
+        link:function($scope,$elem,$attr){
+        }
+    }
+});
+app.run(function($rootScope){
+    $rootScope.headers = {};
+    $rootScope.showHeaderModal = function(){
+        $rootScope.showHeader = true;
+    };
+    $rootScope.hideHeaderModal = function(){
+        $rootScope.showHeader = false;
+    };
+    $rootScope.addHeader = function(){
+        if(typeof($rootScope.addKey)!="undefined"&&""!=$rootScope.addKey){
+            $rootScope.headers[$rootScope.addKey]=$rootScope.addValue;
+            $rootScope.addKey = "";
+            $rootScope.addValue = "";
+        }
+    };
+    $rootScope.removeHeader = function(key){
+        delete $rootScope.headers[key];
+    };
+});
+app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
     $scope.apiDocument = {};
     $scope.apiControllerList = [];
     $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json").then(function(response){
         $scope.apiDocument = response.data;
         $scope.apiControllerList = $scope.apiDocument.apiControllerList;
+        for(let i=0;i<$scope.apiControllerList.length;i++){
+            let apiList = $scope.apiControllerList[i].apiList;
+            for(let j=0;j<apiList.length;j++){
+                let value = localStorage.getItem(apiList[j].url+"_state");
+                if(value&&value=="true"){
+                    apiList[j].ok = true;
+                }else{
+                    apiList[j].ok = false;
+                }
+            }
+        }
     });
+
+    $scope.currentEntity = null;
+    $scope.setCurrentEntity = function(entity){
+        $scope.currentAPI = null;
+        $scope.currentEntity = entity;
+
+        $location.hash("top");
+        $anchorScroll();
+    };
 
     $scope.currentAPI = null;
     $scope.setCurrentAPI = function(api){
+        $scope.currentEntity = null;
         $scope.currentAPI = api;
         $scope.request = {};
         let apiParameters = $scope.currentAPI.apiParameters;
@@ -20,10 +70,19 @@ app.controller("indexController",function($scope,$http,$httpParamSerializer,$loc
         $scope.response = null;
         $scope.result = null;
 
+        let requestValue = localStorage.getItem($scope.currentAPI.url);
+        if(null!=requestValue&&""!=requestValue){
+            $scope.request = JSON.parse(requestValue);
+        }
+
         $location.hash("top");
         $anchorScroll();
     };
 
+    $scope.toggleAPIState = function(api){
+        api.ok = !api.ok;
+        localStorage.setItem(api.url+"_state",api.ok+"");
+    };
     $scope.request = null;
     $scope.response = null;
     $scope.result = null;
@@ -49,7 +108,7 @@ app.controller("indexController",function($scope,$http,$httpParamSerializer,$loc
         }
 
         let operation = {
-            url:$scope.currentAPI.url,
+            url:$scope.currentAPI.url
         };
         //处理路径
         for(let i=0;i<apiParameters.length;i++){
@@ -83,14 +142,19 @@ app.controller("indexController",function($scope,$http,$httpParamSerializer,$loc
         if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
             operation.headers = {"Content-Type":undefined};
         }
+        for(let prop in $rootScope.headers){
+            operation.headers[prop] = $rootScope.headers[prop];
+        }
         $scope.loading = true;
         $http(operation).then(function(response){
             $scope.response = response;
             $scope.responseJSON = JSON.stringify(response.data,null,4);
         },function(error){
             $scope.response = error;
+            $scope.responseJSON = JSON.stringify(error.data,null,4);
         }).finally(function(){
             $scope.loading = false;
+            localStorage.setItem($scope.currentAPI.url,JSON.stringify($scope.request));
         });
     };
 });

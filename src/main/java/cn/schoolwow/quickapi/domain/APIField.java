@@ -7,4 +7,6 @@ public class APIField {
     public String className;
     /**描述*/
     public String description;
+    /**是否忽略*/
+    public boolean ignore;
 }
