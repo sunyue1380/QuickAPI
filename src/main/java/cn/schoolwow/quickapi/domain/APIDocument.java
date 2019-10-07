@@ -1,6 +1,5 @@
 package cn.schoolwow.quickapi.domain;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;

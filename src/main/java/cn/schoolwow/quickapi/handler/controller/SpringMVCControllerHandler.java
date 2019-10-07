@@ -1,7 +1,6 @@
 package cn.schoolwow.quickapi.handler.controller;
 
 import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.domain.APIParameter;
 import cn.schoolwow.quickapi.util.PackageUtil;

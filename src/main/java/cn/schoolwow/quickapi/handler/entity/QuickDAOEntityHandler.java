@@ -11,13 +11,15 @@ public class QuickDAOEntityHandler extends AbstractEntityHandler{
     @Override
     public void handleClass(Class _class, APIEntity apiEntity) {
         Comment comment = (Comment) _class.getAnnotation(Comment.class);
+        if(null!=comment){
             apiEntity.description = comment.value();
+        }
     }
 
     @Override
     public void handleField(Field field, APIField apiField) {
         Comment comment = field.getAnnotation(Comment.class);
-        if (comment != null) {
+        if (null!=comment) {
             apiField.description = comment.value();
         }
         if (null != field.getAnnotation(Ignore.class)) {
