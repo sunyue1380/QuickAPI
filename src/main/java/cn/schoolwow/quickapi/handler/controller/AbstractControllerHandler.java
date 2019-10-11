@@ -8,7 +8,6 @@ import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.ParamTag;
-import com.sun.javadoc.Tag;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -90,10 +89,7 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                     if(apiController.className.equals(classDoc.qualifiedName())){
                         //获取tag
                         {
-                            Tag[] tags = classDoc.tags("tag");
-                            if(tags!=null&&tags.length>0){
-                                apiController.tag = tags[0].text();
-                            }
+                            apiController.tag = classDoc.commentText().trim();
                         }
                         //获取brief和参数信息
                         {
@@ -101,11 +97,8 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                             for(API api:apiController.apiList){
                                 for(MethodDoc methodDoc:methodDocs){
                                     if(api.methodName.equals(methodDoc.name())){
-                                        Tag[] briefs = methodDoc.tags("brief");
-                                        if(briefs!=null&&briefs.length>0){
-                                            api.brief = briefs[0].text();
-                                        }
-                                        api.description = methodDoc.commentText();
+                                        api.brief = methodDoc.commentText().trim();
+                                        api.description = methodDoc.commentText().trim();
                                         //获取参数信息
                                         ParamTag[] paramTags = methodDoc.paramTags();
                                         for(APIParameter apiParameter:api.apiParameters){
@@ -169,12 +162,15 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
             }
             apiEntitySet.add(entityClassName);
             for(APIField apiField:apiEntity.apiFields){
+                if(null==apiField.className){
+                    continue;
+                }
                 String fieldClassName = apiField.className;
                 if(fieldClassName.startsWith("[L")){
                     fieldClassName = fieldClassName.substring(2,fieldClassName.length()-1);
                 }
                 //TODO 处理List的类型
-                if(fieldClassName!=null&&!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)){
+                if(!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)){
                     apiEntityStack.push(fieldClassName);
                 }
             }

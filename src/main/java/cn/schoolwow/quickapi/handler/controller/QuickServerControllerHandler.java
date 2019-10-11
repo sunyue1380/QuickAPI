@@ -65,7 +65,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
             }
             //处理复杂对象
             if(PackageUtil.isInEntityPackage(parameterType.getName())){
-                if(null==parameter.getDeclaredAnnotation(org.springframework.web.bind.annotation.RequestBody.class)){
+                if(null==parameter.getDeclaredAnnotation(RequestBody.class)){
                     for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
                         if(apiField.ignore){
                             continue;
@@ -75,7 +75,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                         apiParameter.description = apiField.description;
                         apiParameter.required = false;
                         apiParameter.type = apiField.className;
-                        if(apiParameter.type.equals(org.springframework.web.multipart.MultipartFile.class.getName())){
+                        if(apiParameter.type.equals(MultipartFile.class.getName())){
                             apiParameter.requestType = "file";
                             api.contentType = "multipart/form-data;";
                         }
