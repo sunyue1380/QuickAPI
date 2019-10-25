@@ -5,11 +5,15 @@ import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.util.JavaDocReader;
 import cn.schoolwow.quickapi.util.PackageUtil;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.FieldDoc;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,11 +74,25 @@ public abstract class AbstractEntityHandler implements EntityHandler{
                     APIField apiField = new APIField();
                     apiField.name = fields[i].getName();
                     apiField.className = fields[i].getType().getName();
+                    //处理泛型
+                    Type type = fields[i].getGenericType();
+                    if(type instanceof ParameterizedType){
+                        ParameterizedType pType = (ParameterizedType)type;
+                        Type genericType = pType.getActualTypeArguments()[0];
+                        apiField.className += "<"+genericType.getTypeName()+">";
+                    }
                     handleField(fields[i],apiField);
                     apiFields[i] = apiField;
                 }
             }
             apiEntity.apiFields = apiFields;
+            try {
+                apiEntity.instance = JSON.toJSONString(_class.newInstance(), SerializerFeature.WriteMapNullValue);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
             apiEntityMap.put(_class.getName(), apiEntity);
         }
         //提取注释部分

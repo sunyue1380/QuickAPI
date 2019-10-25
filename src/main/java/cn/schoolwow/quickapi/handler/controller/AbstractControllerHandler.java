@@ -5,9 +5,7 @@ import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.JavaDocReader;
 import cn.schoolwow.quickapi.util.PackageUtil;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
-import com.sun.javadoc.ClassDoc;
-import com.sun.javadoc.MethodDoc;
-import com.sun.javadoc.ParamTag;
+import com.sun.javadoc.*;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -48,14 +46,14 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                     apiController.deprecated = true;
                 }
                 apiController.className = _class.getName();
-                apiController.tag = _class.getSimpleName();
+                apiController.name = _class.getSimpleName();
             }
             //处理api
             List<API> apiList = new ArrayList<>();
             for(Method method:_class.getDeclaredMethods()){
                 API api = new API();
                 api.methodName = method.getName();
-                api.brief = api.methodName;
+                api.name = api.methodName;
                 //deprecate
                 {
                     Deprecated deprecated = method.getDeclaredAnnotation(Deprecated.class);
@@ -87,17 +85,21 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
             for(APIController apiController:apiControllerList){
                 for(ClassDoc classDoc:classDocs){
                     if(apiController.className.equals(classDoc.qualifiedName())){
-                        //获取tag
+                        //获取控制器名称
                         {
-                            apiController.tag = classDoc.commentText().trim();
+                            apiController.name = classDoc.commentText().trim();
                         }
-                        //获取brief和参数信息
+                        //获取API名称和参数信息
                         {
                             MethodDoc[] methodDocs = classDoc.methods();
                             for(API api:apiController.apiList){
                                 for(MethodDoc methodDoc:methodDocs){
                                     if(api.methodName.equals(methodDoc.name())){
-                                        api.brief = methodDoc.commentText().trim();
+                                        api.name = methodDoc.commentText().trim();
+                                        Tag[] apiNotes = methodDoc.tags("apiNote");
+                                        if(null!=apiNotes&&apiNotes.length>0){
+                                            api.name = apiNotes[0].text();
+                                        }
                                         api.description = methodDoc.commentText().trim();
                                         //获取参数信息
                                         ParamTag[] paramTags = methodDoc.paramTags();
@@ -108,6 +110,17 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                                                     apiParameter.description = paramTag.parameterComment();
                                                     break;
                                                 }
+                                            }
+                                        }
+                                        //获取抛出异常信息
+                                        ThrowsTag[] throwsTags = methodDoc.throwsTags();
+                                        if(null!=throwsTags&&throwsTags.length>0){
+                                            api.apiExceptions = new APIException[throwsTags.length];
+                                            for(int i=0;i<throwsTags.length;i++){
+                                                APIException apiException = new APIException();
+                                                apiException.className = throwsTags[i].exceptionName();
+                                                apiException.description = throwsTags[i].exceptionComment();
+                                                api.apiExceptions[i] = apiException;
                                             }
                                         }
                                         break;
@@ -168,8 +181,9 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                 String fieldClassName = apiField.className;
                 if(fieldClassName.startsWith("[L")){
                     fieldClassName = fieldClassName.substring(2,fieldClassName.length()-1);
+                }else if(fieldClassName.contains("<")&&fieldClassName.contains(">")){
+                    fieldClassName = fieldClassName.substring(fieldClassName.indexOf("<")+1,fieldClassName.indexOf(">"));
                 }
-                //TODO 处理List的类型
                 if(!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)){
                     apiEntityStack.push(fieldClassName);
                 }

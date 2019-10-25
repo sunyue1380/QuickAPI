@@ -9,4 +9,6 @@ public class APIEntity {
     public String description;
     /**实体字段列表*/
     public APIField[] apiFields;
+    /**实体JSON字符串*/
+    public String instance;
 }

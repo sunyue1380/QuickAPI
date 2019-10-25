@@ -11,6 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -105,7 +107,13 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
                     parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
             }
-
+            //处理泛型
+            Type type = parameters[i].getParameterizedType();
+            if(type instanceof ParameterizedType){
+                ParameterizedType pType = (ParameterizedType)type;
+                Type genericType = pType.getActualTypeArguments()[0];
+                parameterEntityNameList.add(genericType.getTypeName());
+            }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
             {

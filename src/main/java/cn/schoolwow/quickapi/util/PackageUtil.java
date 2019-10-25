@@ -76,7 +76,7 @@ public class PackageUtil {
                                     while (jarEntries.hasMoreElements()) {
                                         JarEntry jarEntry = jarEntries.nextElement();
                                         String jarEntryName = jarEntry.getName();
-                                        if (jarEntryName.contains(packageNamePath) && jarEntryName.endsWith(".class")) { //是否是类,是类进行加载
+                                        if (jarEntryName.contains(packageNamePath) && jarEntryName.endsWith(".class")) {
                                             String className = jarEntryName.substring(0, jarEntryName.lastIndexOf(".")).replaceAll("/", ".");
                                             classList.add(Class.forName(className));
                                         }

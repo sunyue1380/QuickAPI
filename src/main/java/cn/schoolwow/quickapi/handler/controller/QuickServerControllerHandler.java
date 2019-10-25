@@ -12,6 +12,8 @@ import cn.schoolwow.quickserver.session.SessionMeta;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,6 +88,13 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                     parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
             }
+            //处理泛型
+            Type type = parameter.getParameterizedType();
+            if(type instanceof ParameterizedType){
+                ParameterizedType pType = (ParameterizedType)type;
+                Type genericType = pType.getActualTypeArguments()[0];
+                parameterEntityNameList.add(genericType.getTypeName());
+            }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
             {
@@ -119,6 +128,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                     apiParameter.name = "requestBody";
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
+                    apiParameter.exampleEntity = parameter.getType().getName();
                     api.contentType = "application/json; charset=utf-8";
                 }
             }

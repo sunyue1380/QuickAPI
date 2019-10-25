@@ -30,7 +30,7 @@ app.run(function($rootScope){
         delete $rootScope.headers[key];
     };
 });
-app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
+app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll,$interval){
     $scope.apiDocument = {};
     $scope.apiControllerList = [];
     $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json").then(function(response){
@@ -49,6 +49,23 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     });
 
+    //服务状态
+    $scope.canAccess = true;
+    $scope.refreshAccessState = function(){
+        $http.get($scope.apiControllerList[0].apiList[0].url).then(function(response){
+            console.log(response);
+            $scope.canAccess = true;
+        },function(response){
+            console.log(response);
+            if(response.status===502){
+                $scope.canAccess = false;
+            }else{
+                $scope.canAccess = true;
+            }
+        });
+    };
+
+    //当前API信息
     $scope.currentEntity = null;
     $scope.setCurrentEntity = function(entity){
         $scope.currentAPI = null;
@@ -66,6 +83,9 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         let apiParameters = $scope.currentAPI.apiParameters;
         for(let i=0;i<apiParameters.length;i++){
             $scope.request[apiParameters[i].name] = apiParameters[i].defaultValue;
+            if(null!=apiParameters[i].exampleEntity){
+                $scope.request[apiParameters[i].name] = $scope.apiDocument.apiEntityMap[apiParameters[i].exampleEntity].instance;
+            }
         }
         $scope.response = null;
         $scope.result = null;
@@ -157,4 +177,19 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             localStorage.setItem($scope.currentAPI.url,JSON.stringify($scope.request));
         });
     };
+
+    //API搜索
+    $scope.searchText = "";
+    $scope.showApiController = function(apiController){
+        if($scope.searchText===""){
+            return true;
+        }
+        let apiList = apiController.apiList;
+        for(let i=0;i<apiList.length;i++){
+            if(apiList[i].name.indexOf($scope.searchText)>=0){
+                return true;
+            }
+        }
+        return false;
+    }
 });
