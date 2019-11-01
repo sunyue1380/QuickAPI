@@ -1,5 +1,7 @@
 package cn.schoolwow.quickapi.util;
 
+import cn.schoolwow.quickapi.domain.APIHistory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -14,7 +16,7 @@ public class QuickAPIConfig {
     /**指定Java源代码路径*/
     public static String sourcePath = System.getProperty("user.dir")+"/src/main/java";
     /**描述*/
-    public static String description = "";
+    public static APIHistory apiHistory = new APIHistory();
     /**控制器包名*/
     public static List<String> controllerPackageNameList = new ArrayList<>();
     /**实体类包名*/

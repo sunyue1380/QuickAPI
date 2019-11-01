@@ -47,11 +47,19 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 }
             }
         }
+        $scope.refreshAccessState();
     });
 
+    $scope.showHistory = function(){
+        $scope.currentEntity=null;
+        $scope.currentAPI=null;
+    };
+
     //服务状态
+    $scope.isLoading = false;
     $scope.canAccess = true;
     $scope.refreshAccessState = function(){
+        $scope.isLoading = true;
         $http.get($scope.apiControllerList[0].apiList[0].url).then(function(response){
             console.log(response);
             $scope.canAccess = true;
@@ -62,6 +70,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }else{
                 $scope.canAccess = true;
             }
+        }).finally(function(){
+            $scope.isLoading = false;
         });
     };
 
@@ -180,15 +190,27 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
     //API搜索
     $scope.searchText = "";
+    //过滤APIController
     $scope.showApiController = function(apiController){
         if($scope.searchText===""){
             return true;
         }
         let apiList = apiController.apiList;
         for(let i=0;i<apiList.length;i++){
-            if(apiList[i].name.indexOf($scope.searchText)>=0){
+            if($scope.showApi(apiList[i])){
                 return true;
             }
+        }
+        return false;
+    };
+
+    //过滤API
+    $scope.showApi = function(api){
+        if($scope.searchText===""){
+            return true;
+        }
+        if(api.name.indexOf($scope.searchText)>=0||api.url.indexOf($scope.searchText)>=0){
+            return true;
         }
         return false;
     }

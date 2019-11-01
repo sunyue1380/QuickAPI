@@ -1,10 +1,13 @@
 package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.APIDocument;
+import cn.schoolwow.quickapi.domain.APIHistory;
 import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
 import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import cn.schoolwow.quickdao.util.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +18,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -61,9 +65,9 @@ public class QuickAPI{
         return this;
     }
 
-    /**文档描述*/
+    /**更新日志*/
     public QuickAPI description(String description){
-        QuickAPIConfig.description = description;
+        QuickAPIConfig.apiHistory.contentList.add(description);
         return this;
     }
 
@@ -101,13 +105,30 @@ public class QuickAPI{
             {
                 APIDocument apiDocument = new APIDocument();
                 apiDocument.title = QuickAPIConfig.title;
-                apiDocument.description = QuickAPIConfig.description;
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
                 apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
-                String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
-                logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
+                //处理更新日志
+                {
+                    if(file.exists()){
+                        Scanner scanner = new Scanner(file);
+                        StringBuilder builder = new StringBuilder();
+                        while(scanner.hasNextLine()){
+                            builder.append(scanner.nextLine());
+                        }
+                        scanner.close();
+                        JSONObject o = JSON.parseObject(builder.toString());
+                        if(o.containsKey("apiHistoryList")){
+                            apiDocument.apiHistoryList.addAll(o.getJSONArray("apiHistoryList").toJavaList(APIHistory.class));
+                        }
+                    }
+                    if(!QuickAPIConfig.apiHistory.contentList.isEmpty()){
+                        apiDocument.apiHistoryList.add(QuickAPIConfig.apiHistory);
+                    }
+                    logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
+                }
+                String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 generateFile(data,file);
             }
             //复制静态资源文件

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>接口文档</title>
     <link href="css/spetre.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcss.com/spectre.css/0.5.8/spectre-icons.min.css" rel="stylesheet">
+    <link href="css/spectre-icons.min.css" rel="stylesheet">
     <style>
         .ng-cloak{display:none;}
     </style>
@@ -20,13 +20,16 @@
                     <div>
                         <span class="label label-success" ng-show="canAccess">服务可用</span>
                         <span class="label label-error" ng-show="!canAccess">服务不可用</span>
-                        <button class="btn btn-primary btn-sm" ng-click="refreshAccessState();"><i class="icon icon-refresh"></i></button>
+                        <button class="btn btn-primary btn-sm" ng-class="{true:'loading',false:''}[isLoading]" ng-click="refreshAccessState();"><i class="icon icon-refresh"></i></button>
                     </div>
                 </li>
                 <li class="nav-item">
                     <div class="form-group">
                         <input class="form-input" type="text" ng-model="searchText" placeholder="要查询的API">
                     </div>
+                </li>
+                <li class="nav-item" ng-click="showHistory();">
+                    <a class="c-hand">文档首页</a>
                 </li>
                 <li class="nav-item" ng-click="showHeaderModal();">
                     <a class="c-hand">全局头部</a>
@@ -49,7 +52,7 @@
                         <span class="label label-primary px-2">{{apiController.apiList.length}}</span>
                     </span>
                     <ul class="nav">
-                        <li class="nav-item" ng-repeat="api in apiController.apiList | filter:{'name':searchText}">
+                        <li class="nav-item" ng-repeat="api in apiController.apiList" ng-show="showApi(api);">
                             <a class="c-hand">
                                 <i class="icon icon-check" ng-show="api.ok" ng-click="toggleAPIState(api);"></i>
                                 <i class="icon icon-minus" ng-hide="api.ok" ng-click="toggleAPIState(api);"></i>
@@ -62,7 +65,25 @@
             </ul>
         </div>
         <div class="column col-8" ng-show="currentEntity==null&&currentAPI==null">
-            {{apiDocument.description}}
+            <div class="timeline">
+                <div class="timeline-item" ng-repeat="apiHistory in apiDocument.apiHistoryList">
+                    <div class="timeline-left">
+                        <a class="timeline-icon icon-lg">
+                            <i class="timeline-icon tooltip"></i>
+                        </a>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="tile">
+                            <div class="tile-content">
+                                <p class="tile-subtitle">
+                                    <h3>{{apiHistory.updateTime | date:'yyyy-MM-dd HH:mm:ss'}}</h3>
+                                </p>
+                                <p class="tile-title" ng-repeat="content in apiHistory.contentList">{{content}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="column col-8" ng-show="currentEntity!=null">
             <entity-table entity="currentEntity"></entity-table>
