@@ -124,7 +124,7 @@ public class QuickAPI{
                         }
                     }
                     if(!QuickAPIConfig.apiHistory.contentList.isEmpty()){
-                        apiDocument.apiHistoryList.add(QuickAPIConfig.apiHistory);
+                        apiDocument.apiHistoryList.add(0,QuickAPIConfig.apiHistory);
                     }
                     logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
                 }

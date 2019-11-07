@@ -1,4 +1,4 @@
-let app = angular.module("app",[]);
+let app = angular.module("app",["ngSanitize"]);
 app.directive('entityTable',function(){
     return {
         restrict: 'AE',
@@ -30,7 +30,7 @@ app.run(function($rootScope){
         delete $rootScope.headers[key];
     };
 });
-app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll,$interval){
+app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
     $scope.apiDocument = {};
     $scope.apiControllerList = [];
     $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json").then(function(response){
@@ -45,6 +45,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 }else{
                     apiList[j].ok = false;
                 }
+                // apiList[i].description = $sce.trustAsHtml(apiList[i].description);
             }
         }
         $scope.refreshAccessState();

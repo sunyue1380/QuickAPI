@@ -101,6 +101,10 @@ public class PackageUtil {
     /**根据规则过滤类*/
     private static List<Class> filterClass(List<Class> classList){
         Stream<Class> stream = classList.stream().filter((_class)->{
+            //排除枚举类型
+            if(_class.isEnum()){
+                return false;
+            }
             boolean result = true;
             //根据类过滤
             if(QuickAPIConfig.ignoreClassList!=null){
@@ -120,8 +124,8 @@ public class PackageUtil {
             }
             return result;
         });
-        if(QuickAPIConfig.predicate!=null){
-            stream.filter(QuickAPIConfig.predicate);
+        if(null!=QuickAPIConfig.predicate){
+            stream = stream.filter(QuickAPIConfig.predicate);
         }
         return stream.collect(Collectors.toList());
     }
