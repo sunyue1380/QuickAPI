@@ -33,7 +33,7 @@ app.run(function($rootScope){
 app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
     $scope.apiDocument = {};
     $scope.apiControllerList = [];
-    $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json").then(function(response){
+    $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json?v="+new Date().getTime()).then(function(response){
         $scope.apiDocument = response.data;
         $scope.apiControllerList = $scope.apiDocument.apiControllerList;
         for(let i=0;i<$scope.apiControllerList.length;i++){
@@ -45,7 +45,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 }else{
                     apiList[j].ok = false;
                 }
-                // apiList[i].description = $sce.trustAsHtml(apiList[i].description);
             }
         }
         $scope.refreshAccessState();
