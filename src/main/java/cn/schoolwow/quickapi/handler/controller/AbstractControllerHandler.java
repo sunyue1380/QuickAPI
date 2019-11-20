@@ -167,8 +167,11 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
         }
         Stack<String> apiEntityStack = new Stack<>();
         apiEntityStack.push(className);
+        //记录已放入的类型,防止循环依赖出现
+        List<String> fieldClassNameList = new ArrayList<>();
         while(!apiEntityStack.isEmpty()){
             String entityClassName = apiEntityStack.pop();
+            fieldClassNameList.add(entityClassName);
             APIEntity apiEntity = apiEntityMap.get(entityClassName);
             if(null==apiEntity){
                 continue;
@@ -184,11 +187,15 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                 }else if(fieldClassName.contains("<")&&fieldClassName.contains(">")){
                     fieldClassName = fieldClassName.substring(fieldClassName.indexOf("<")+1,fieldClassName.indexOf(">"));
                 }
-                if(!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)){
+                if(PackageUtil.isInEntityPackage(fieldClassName)
+                        &&!hasRecycleDependency(apiEntityMap.get(fieldClassName),apiEntity)
+                        &&!fieldClassNameList.contains(fieldClassName)
+                ){
                     apiEntityStack.push(fieldClassName);
                 }
             }
         }
+        fieldClassNameList.clear();
         return apiEntitySet;
     }
 
