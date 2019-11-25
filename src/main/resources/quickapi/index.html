@@ -78,7 +78,9 @@
                                 <p class="tile-subtitle">
                                     <h3>{{apiHistory.updateTime | date:'yyyy-MM-dd HH:mm:ss'}}</h3>
                                 </p>
-                                <p class="tile-title" ng-repeat="content in apiHistory.contentList">{{content}}</p>
+                                <p class="tile-title" ng-repeat="api in apiHistory.addList"><span class="label label-primary">新增</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}<button class="btn btn-sm" ng-click="setCurrentAPI(api);">{{api.name}}</button></p>
+                                <p class="tile-title" ng-repeat="api in apiHistory.modifyList"><span class="label label-warning">变更</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}<button class="btn btn-sm" ng-click="setCurrentAPI(api);">{{api.name}}</button></p>
+                                <p class="tile-title" ng-repeat="api in apiHistory.deleteList"><span class="label label-error">删除</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}<button class="btn btn-sm" ng-click="setCurrentAPI(api);">{{api.name}}</button></p>
                             </div>
                         </div>
                     </div>

@@ -36,14 +36,37 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $http.get(location.pathname.substring(0,location.pathname.lastIndexOf("/"))+"/api.json?v="+new Date().getTime()).then(function(response){
         $scope.apiDocument = response.data;
         $scope.apiControllerList = $scope.apiDocument.apiControllerList;
-        for(let i=0;i<$scope.apiControllerList.length;i++){
-            let apiList = $scope.apiControllerList[i].apiList;
-            for(let j=0;j<apiList.length;j++){
-                let value = localStorage.getItem(apiList[j].url+"_state");
-                if(value&&value=="true"){
-                    apiList[j].ok = true;
-                }else{
-                    apiList[j].ok = false;
+        //处理历史变更记录
+        const apiHistoryList = $scope.apiDocument.apiHistoryList;
+        for(let i=0;i<apiHistoryList.length;i++){
+            let addList = apiHistoryList[i].addList;
+            for(let j=0;j<addList.length;j++){
+                for(let k=0;k<$scope.apiControllerList.length;k++){
+                    let apiList = $scope.apiControllerList[k].apiList;
+                    for(let l=0;l<apiList.length;l++){
+                        let value = localStorage.getItem(apiList[l].url+"_state");
+                        if(value&&value=="true"){
+                            apiList[l].ok = true;
+                        }else{
+                            apiList[l].ok = false;
+                        }
+                        let historyName =  $scope.apiControllerList[k].className+"#"+apiList[l].methods[0]+"_"+apiList[l].url;
+                        if(addList[j]==historyName){
+                            addList[j] = apiList[l];
+                        }
+                    }
+                }
+            }
+            let modifyList = apiHistoryList[i].modifyList;
+            for(let j=0;j<modifyList.length;j++){
+                for(let k=0;k<$scope.apiControllerList.length;k++){
+                    let apiList = $scope.apiControllerList[k].apiList;
+                    for(let l=0;l<apiList.length;l++){
+                        let historyName =  $scope.apiControllerList[k].className+"#"+apiList[l].methods[0]+"_"+apiList[l].url;
+                        if(modifyList[j]==historyName){
+                            modifyList[j] = apiList[l];
+                        }
+                    }
                 }
             }
         }

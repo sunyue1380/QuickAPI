@@ -8,6 +8,10 @@ import java.util.List;
 public class APIHistory {
     /**更新时间*/
     public Date updateTime = new Date();
-    /**更新日志*/
-    public List<String> contentList = new ArrayList<>();
+    /**新增接口*/
+    public List<String> addList = new ArrayList<>();
+    /**变更接口*/
+    public List<String> modifyList = new ArrayList<>();
+    /**删除接口*/
+    public List<API> deleteList = new ArrayList<>();
 }

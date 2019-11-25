@@ -1,13 +1,13 @@
 package cn.schoolwow.quickapi;
 
+import cn.schoolwow.quickapi.domain.API;
+import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIDocument;
 import cn.schoolwow.quickapi.domain.APIHistory;
 import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
 import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
-import cn.schoolwow.quickdao.util.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Scanner;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -65,12 +62,6 @@ public class QuickAPI{
         return this;
     }
 
-    /**更新日志*/
-    public QuickAPI description(String description){
-        QuickAPIConfig.apiHistory.contentList.add(description);
-        return this;
-    }
-
     public QuickAPI ignorePackageName(String ignorePackageName){
         if(QuickAPIConfig.ignorePackageNameList==null){
             QuickAPIConfig.ignorePackageNameList = new ArrayList<>();
@@ -109,25 +100,7 @@ public class QuickAPI{
                 apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
                 apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
                 File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
-                //处理更新日志
-                {
-                    if(file.exists()){
-                        Scanner scanner = new Scanner(file);
-                        StringBuilder builder = new StringBuilder();
-                        while(scanner.hasNextLine()){
-                            builder.append(scanner.nextLine());
-                        }
-                        scanner.close();
-                        JSONObject o = JSON.parseObject(builder.toString());
-                        if(o.containsKey("apiHistoryList")){
-                            apiDocument.apiHistoryList.addAll(o.getJSONArray("apiHistoryList").toJavaList(APIHistory.class));
-                        }
-                    }
-                    if(!QuickAPIConfig.apiHistory.contentList.isEmpty()){
-                        apiDocument.apiHistoryList.add(0,QuickAPIConfig.apiHistory);
-                    }
-                    logger.debug("[生成文件]路径:{}",file.getAbsolutePath());
-                }
+                compareJSON(file,apiDocument);
                 String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 generateFile(data,file);
             }
@@ -162,6 +135,86 @@ public class QuickAPI{
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**比较新老JSON文件,获取变更信息*/
+    private void compareJSON(File file,APIDocument newAPIDocument) throws FileNotFoundException {
+        if(!file.exists()){
+            return;
+        }
+        Scanner scanner = new Scanner(file);
+        StringBuilder builder = new StringBuilder();
+        while(scanner.hasNextLine()){
+            builder.append(scanner.nextLine());
+        }
+        scanner.close();
+        APIDocument oldAPIDocument = JSON.parseObject(builder.toString()).toJavaObject(APIDocument.class);
+        //比对API
+        List<APIController> oldAPIControllerList = oldAPIDocument.apiControllerList;
+        List<APIController> newAPIControllerList = newAPIDocument.apiControllerList;
+        //提取变更列表
+        APIHistory apiHistory = new APIHistory();
+        for(APIController newAPIController:newAPIControllerList){
+            if(!oldAPIControllerList.contains(newAPIController)){
+                List<API> newAPIList = newAPIController.apiList;
+                for(API api:newAPIList){
+                    apiHistory.addList.add(newAPIController.className+"#"+api.methods[0]+"_"+api.url);
+                    logger.info("[新增接口]{} {} {}",api.name,api.methods[0],api.url);
+                }
+                continue;
+            }
+            for(APIController oldAPIController:oldAPIControllerList){
+                if(newAPIController.className.equals(oldAPIController.className)){
+                    List<API> newAPIList = newAPIController.apiList;
+                    List<API> oldAPIList = oldAPIController.apiList;
+                    for(API newAPI:newAPIList){
+                        //判断是否新增
+                        if(!oldAPIList.contains(newAPI)){
+                            apiHistory.addList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
+                            logger.info("[新增接口]{} {} {}",newAPI.name,newAPI.methods[0],newAPI.url);
+                            continue;
+                        }
+                        //判断是否变更
+                        for(API oldAPI:oldAPIList){
+                            if(newAPI.equals(oldAPI)&&!Arrays.equals(newAPI.apiParameters,oldAPI.apiParameters)){
+                                apiHistory.modifyList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
+                                logger.info("[变更接口]{} {} {}",newAPI.name,newAPI.methods[0],newAPI.url);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        //判断是否删除
+        for(APIController oldAPIController:oldAPIControllerList){
+            if(!newAPIControllerList.contains(oldAPIController)){
+                List<API> apiList = oldAPIController.apiList;
+                for(API api:apiList){
+                    apiHistory.deleteList.add(api);
+                    logger.info("[删除接口]{} {} {}",api.name,api.methods[0],api.url);
+                }
+                continue;
+            }
+            for(APIController newAPIController:newAPIControllerList){
+                if(oldAPIController.className.equals(newAPIController.className)){
+                    List<API> oldAPIList = oldAPIController.apiList;
+                    List<API> newAPIList = newAPIController.apiList;
+                    for(API oldAPI:oldAPIList){
+                        if(!newAPIList.contains(oldAPI)){
+                            apiHistory.deleteList.add(oldAPI);
+                            logger.info("[删除接口]{} {} {}",oldAPI.name,oldAPI.methods[0],oldAPI.url);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if(!apiHistory.addList.isEmpty()||!apiHistory.modifyList.isEmpty()||!apiHistory.deleteList.isEmpty()){
+            oldAPIDocument.apiHistoryList.add(0,apiHistory);
+        }
+        newAPIDocument.apiHistoryList = oldAPIDocument.apiHistoryList;
     }
 
     private void generateFile(InputStream inputStream,File file) throws IOException {

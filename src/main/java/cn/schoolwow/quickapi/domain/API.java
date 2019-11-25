@@ -1,5 +1,7 @@
 package cn.schoolwow.quickapi.domain;
 
+import java.util.Arrays;
+
 public class API {
     /**是否被废弃*/
     public boolean deprecated;
@@ -25,4 +27,22 @@ public class API {
     public String[] returnEntityNameList = new String[0];
     /**抛出异常*/
     public APIException[] apiExceptions = new APIException[0];
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        API api = (API) o;
+
+        if (!Arrays.equals(methods, api.methods)) return false;
+        return url != null ? url.equals(api.url) : api.url == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(methods);
+        result = 31 * result + (url != null ? url.hashCode() : 0);
+        return result;
+    }
 }
