@@ -140,6 +140,17 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $scope.response = null;
     $scope.result = null;
 
+    //上次使用
+    $scope.lastUsed  = [];
+    if(null!=localStorage.getItem("lastUsed")){
+        $scope.lastUsed = JSON.parse(localStorage.getItem("lastUsed"));
+    }
+    $scope.cleanHistory = function(){
+        if(confirm("确认清空历史记录吗?")){
+            localStorage.setItem("lastUsed","[]");
+            $scope.lastUsed  = [];
+        }
+    };
     //执行请求
     $scope.execute = function(){
         //检查必填项
@@ -208,6 +219,11 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }).finally(function(){
             $scope.loading = false;
             localStorage.setItem($scope.currentAPI.url,JSON.stringify($scope.request));
+            if($scope.lastUsed.length>5){
+                $scope.lastUsed.shift();
+            }
+            $scope.lastUsed.unshift($scope.currentAPI);
+            localStorage.setItem("lastUsed",JSON.stringify($scope.lastUsed));
         });
     };
 

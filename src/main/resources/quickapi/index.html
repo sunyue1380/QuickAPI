@@ -34,6 +34,23 @@
                 <li class="nav-item" ng-click="showHeaderModal();">
                     <a class="c-hand">全局头部</a>
                 </li>
+                <li class="nav-item" ng-show="lastUsed.length>0">
+                    <span>最近使用</span>
+                    <ul class="nav">
+                        <li class="nav-item" ng-repeat="api in lastUsed">
+                            <a class="c-hand">
+                                <s ng-show="api.deprecated" ng-click="setCurrentAPI(api);">{{api.name}}</s>
+                                <span ng-show="!api.deprecated" ng-click="setCurrentAPI(api);">{{api.name}}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" ng-show="lastUsed.length>0">
+                            <a class="c-hand">
+                                <div class="divider"></div>
+                                <span ng-click="cleanHistory();">清除历史记录</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <li class="nav-item" ng-show="searchText==null||''==searchText">
                     <span>实体类信息</span>
                     <ul class="nav">
