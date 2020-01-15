@@ -8,6 +8,8 @@ import java.util.Map;
 public class APIDocument {
     /**文档标题*/
     public String title = "QuickAPI";
+    /**文档描述*/
+    public String description;
     /**生成时间*/
     public Date date;
     /**控制器*/

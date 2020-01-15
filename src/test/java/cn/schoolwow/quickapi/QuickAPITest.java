@@ -9,6 +9,9 @@ public class QuickAPITest {
         QuickAPI.newInstance()
                 .controller("cn.schoolwow.quickapi.controller")
                 .entity("cn.schoolwow.quickapi.entity")
-                .generate();
+                .directory("./src/main/webapps")
+                .url("/doc")
+                .generate()
+                .upload("http://127.0.0.1:9000");
     }
 }

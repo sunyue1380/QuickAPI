@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.*;
@@ -29,6 +30,12 @@ public class QuickAPI{
     /*文档标题*/
     public QuickAPI title(String title){
         QuickAPIConfig.title = title;
+        return this;
+    }
+
+    /*文档描述*/
+    public QuickAPI description(String description){
+        QuickAPIConfig.description = description;
         return this;
     }
 
@@ -83,7 +90,7 @@ public class QuickAPI{
         return this;
     }
 
-    public void generate(){
+    public QuickAPI generate(){
         //检测Java
         {
             File file = new File(QuickAPIConfig.sourcePath);
@@ -96,6 +103,7 @@ public class QuickAPI{
             {
                 APIDocument apiDocument = new APIDocument();
                 apiDocument.title = QuickAPIConfig.title;
+                apiDocument.description = QuickAPIConfig.description;
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
                 apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
@@ -103,6 +111,7 @@ public class QuickAPI{
                 compareJSON(file,apiDocument);
                 String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                 generateFile(data,file);
+                QuickAPIConfig.jsonObject = data;
             }
             //复制静态资源文件
             {
@@ -120,7 +129,8 @@ public class QuickAPI{
                             if(
                                     jarEntry.getName().endsWith(".html")||
                                     jarEntry.getName().endsWith(".css")||
-                                    jarEntry.getName().endsWith(".js")
+                                    jarEntry.getName().endsWith(".js")||
+                                    jarEntry.getName().endsWith(".woff2")
                             ){
                                 InputStream inputStream = jarFile.getInputStream(jarEntry);
                                 String name = jarEntry.getName();
@@ -134,6 +144,51 @@ public class QuickAPI{
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return this;
+    }
+
+    /**上传到服务器*/
+    public void upload() {
+        upload("https://api.schoolwow.cn");
+    }
+
+    /**上传到服务器*/
+    public void upload(String host) {
+        if(QuickAPIConfig.jsonObject==null||QuickAPIConfig.jsonObject.isEmpty()){
+            throw new IllegalArgumentException("请先调用generate()方法!");
+        }
+        StringBuilder sb = new StringBuilder();
+        Scanner scanner = null;
+        try {
+            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(host+"/api/project/uploadAPI").openConnection();
+            httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setDoInput(true);
+            httpURLConnection.setDoOutput(true);
+            httpURLConnection.getOutputStream().write(QuickAPIConfig.jsonObject.getBytes());
+            httpURLConnection.connect();
+            int statusCode = httpURLConnection.getResponseCode();
+
+            if(statusCode==200){
+                scanner = new Scanner(httpURLConnection.getInputStream());
+            }else{
+                scanner = new Scanner(httpURLConnection.getErrorStream());
+            }
+            while(scanner.hasNextLine()){
+                sb.append(scanner.nextLine());
+            }
+            scanner.close();
+            if(statusCode==200){
+                logger.info("[上传成功]{}",sb.toString());
+            }else{
+                logger.warn("[上传失败]{}",sb.toString());
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            if(null!=scanner){
+                scanner.close();
+            }
         }
     }
 
