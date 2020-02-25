@@ -127,6 +127,24 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
                     if(!requestParam.defaultValue().equals(ValueConstants.DEFAULT_NONE)){
                         apiParameter.defaultValue = requestParam.defaultValue();
                     }
+                    //存在post,put或者patch方法为body,否则为query
+                    {
+                        boolean existBodyMethod = false;
+                        for(String requestMethod:api.methods){
+                            if("POST".equalsIgnoreCase(requestMethod)
+                                    ||"PUT".equalsIgnoreCase(requestMethod)
+                                    ||"PATCH".equalsIgnoreCase(requestMethod)
+                            ){
+                                existBodyMethod = true;
+                                break;
+                            }
+                        }
+                        if(existBodyMethod){
+                            apiParameter.position = "body";
+                        }else{
+                            apiParameter.position = "query";
+                        }
+                    }
                 }
             }
             //RequestPart

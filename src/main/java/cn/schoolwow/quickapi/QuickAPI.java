@@ -1,14 +1,15 @@
 package cn.schoolwow.quickapi;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIDocument;
-import cn.schoolwow.quickapi.domain.APIHistory;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
 import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import cn.schoolwow.quickdao.util.StringUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.sun.tools.javac.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,11 +108,20 @@ public class QuickAPI{
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
                 apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
-                File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
-                compareJSON(file,apiDocument);
-                String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
-                generateFile(data,file);
-                QuickAPIConfig.jsonObject = data;
+                //生成json数据
+                {
+                    File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
+                    compareJSON(file,apiDocument);
+                    String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
+                    generateFile(data,file);
+                    QuickAPIConfig.jsonObject = data;
+                }
+                //生成swagger.json文件
+                {
+                    String data = generateSwagger(apiDocument);
+                    File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/swagger.json");
+                    generateFile(data,file);
+                }
             }
             //复制静态资源文件
             {
@@ -270,6 +280,80 @@ public class QuickAPI{
             oldAPIDocument.apiHistoryList.add(0,apiHistory);
         }
         newAPIDocument.apiHistoryList = oldAPIDocument.apiHistoryList;
+    }
+
+    private String generateSwagger(APIDocument apiDocument){
+        JSONObject o = new JSONObject();
+        o.put("swagger","2.0");
+        o.put("info",JSON.parseObject("{\"title\":\""+apiDocument.title+"\",\"version\":\"last\"}"));
+        o.put("basePath","/");
+        //添加tag
+        {
+            JSONArray tagArray = new JSONArray();
+            for(APIController apiController:apiDocument.apiControllerList){
+                tagArray.add(JSON.parseObject("{\"name\":\""+apiController.name+"\",\"description\":null}"));
+            }
+            o.put("tags",tagArray);
+        }
+        o.put("schemes",JSON.parseArray("[\"http\"]"));
+        //添加path
+        {
+            JSONObject paths = new JSONObject();
+            for(APIController apiController:apiDocument.apiControllerList){
+                for(API api:apiController.apiList){
+                    JSONObject p = new JSONObject();
+                    p.put("tags",JSON.parseArray("[\""+apiController.name+"\"]"));
+                    p.put("summary",api.name);
+                    p.put("description",api.description);
+                    //添加参数
+                    {
+                        JSONArray parameters = new JSONArray();
+                        for(APIParameter apiParameter:api.apiParameters){
+                            JSONObject q = new JSONObject();
+                            q.put("name",apiParameter.name);
+                            q.put("in",apiParameter.position);
+                            q.put("required",apiParameter.required);
+                            if(null==apiParameter.description){
+                                q.put("description","");
+                            }else{
+                                q.put("description",apiParameter.description+("".equals(apiParameter.defaultValue)?"":",默认为"+apiParameter.defaultValue));
+                            }
+                            switch(apiParameter.requestType){
+                                case "text":{
+                                    q.put("type","string");
+                                }break;
+                                case "textarea":{
+                                    q.put("name","root");
+                                    p.put("consumes",JSON.parseArray("[\"application/json\"]"));
+                                    APIEntity apiEntity = apiDocument.apiEntityMap.get(apiParameter.type);
+                                    JSONObject schema = new JSONObject();
+                                    schema.put("$schema","http://json-schema.org/draft-04/schema#");
+                                    schema.put("type","object");
+                                    JSONObject fieldProperty = new JSONObject();
+                                    for(APIField apiField:apiEntity.apiFields){
+                                        fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.description+"\"}"));
+                                    }
+                                    schema.put("properties",fieldProperty);
+                                    q.put("schema",schema);
+                                }break;
+                                case "file":{
+                                    q.put("in","formData");
+                                    q.put("type","file");
+                                    q.put("description","上传的文件");
+                                    p.put("consumes",JSON.parseArray("[\"multipart/form-data\"]"));
+                                }break;
+                            }
+                            parameters.add(q);
+                        }
+                        p.put("parameters",parameters);
+                    }
+                    p.put("responses",JSON.parseObject("{\"200\":{\"description\":\"successful operation\",\"schema\":{}}}"));
+                    paths.put(api.url,JSON.parseObject("{\""+api.methods[0].toLowerCase()+"\":"+p.toJSONString()+"}"));
+                }
+            }
+            o.put("paths",paths);
+        }
+        return o.toJSONString();
     }
 
     private void generateFile(InputStream inputStream,File file) throws IOException {

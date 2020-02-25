@@ -195,8 +195,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         let apiParameters = $scope.currentAPI.apiParameters;
         for(let i=0;i<apiParameters.length;i++){
             $scope.request[apiParameters[i].name] = apiParameters[i].defaultValue;
-            if(null!=apiParameters[i].exampleEntity){
-                $scope.request[apiParameters[i].name] = $scope.apiDocument.apiEntityMap[apiParameters[i].exampleEntity].instance;
+            if("textarea"==apiParameters[i].requestType){
+                $scope.request[apiParameters[i].name] = $scope.apiDocument.apiEntityMap[apiParameters[i].type].instance;
             }
         }
         $scope.response = null;

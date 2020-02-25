@@ -106,6 +106,24 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                     }
                     apiParameter.required = requestParam.required();
                     apiParameter.defaultValue = requestParam.defaultValue();
+                    //存在post,put或者patch方法为body,否则为query
+                    {
+                        boolean existBodyMethod = false;
+                        for(String requestMethod:api.methods){
+                            if("POST".equalsIgnoreCase(requestMethod)
+                                    ||"PUT".equalsIgnoreCase(requestMethod)
+                                    ||"PATCH".equalsIgnoreCase(requestMethod)
+                            ){
+                                existBodyMethod = true;
+                                break;
+                            }
+                        }
+                        if(existBodyMethod){
+                            apiParameter.position = "body";
+                        }else{
+                            apiParameter.position = "query";
+                        }
+                    }
                 }
             }
             //RequestPart
@@ -128,7 +146,6 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                     apiParameter.name = "requestBody";
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
-                    apiParameter.exampleEntity = parameter.getType().getName();
                     api.contentType = "application/json; charset=utf-8";
                 }
             }

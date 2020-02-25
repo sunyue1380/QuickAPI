@@ -16,8 +16,6 @@ public class APIParameter {
     public boolean required = true;
     /**默认值*/
     public String defaultValue = "";
-    /**样例*/
-    public String exampleEntity;
 
     @Override
     public boolean equals(Object o) {
