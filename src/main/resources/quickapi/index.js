@@ -154,6 +154,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     //实体类显示
     $scope.currentEntity = null;
     $scope.setCurrentEntity = function(entity){
+        $scope.currentAPI = null;
         $scope.view = "entity";
         $scope.currentEntity = entity;
         $location.hash("top");
@@ -189,6 +190,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     //显示API详情
     $scope.currentAPI = null;
     $scope.setCurrentAPI = function(api){
+        $scope.currentEntity = null;
         $scope.view = "api";
         $scope.currentAPI = api;
         $scope.request = {};
