@@ -5,10 +5,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class QuickAPIConfig {
-    /**接口文档标题*/
-    public static String title = "QuickAPI";
-    /**接口文档描述*/
-    public static String description;
     /**接口文档路径*/
     public static String url = "/quickapi";
     /**指定生成路径*/

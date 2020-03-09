@@ -4,8 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -49,22 +55,25 @@ public class PackageUtil {
                             if (!file.isDirectory()) {
                                 throw new IllegalArgumentException("包名不是合法的文件夹!" + url.getFile());
                             }
-                            Stack<File> stack = new Stack<>();
-                            stack.push(file);
                             String indexOfString = packageName.replace(".", "/");
-                            while (!stack.isEmpty()) {
-                                file = stack.pop();
-                                for (File f : file.listFiles()) {
-                                    if (f.isDirectory()) {
-                                        stack.push(f);
-                                    } else if (f.isFile() && f.getName().endsWith(".class")) {
+                            Files.walkFileTree(file.toPath(),new SimpleFileVisitor<Path>(){
+                                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                        throws IOException
+                                {
+                                    File f = file.toFile();
+                                    if(f.getName().endsWith(".class")){
                                         String path = f.getAbsolutePath().replace("\\", "/");
                                         int startIndex = path.indexOf(indexOfString);
                                         String className = path.substring(startIndex, path.length() - 6).replace("/", ".");
-                                        classList.add(Class.forName(className));
+                                        try {
+                                            classList.add(Class.forName(className));
+                                        } catch (ClassNotFoundException e) {
+                                            logger.warn("[实体类不存在]{}",className);
+                                        }
                                     }
+                                    return FileVisitResult.CONTINUE;
                                 }
-                            }
+                            });
                         }
                         break;
                         case "jar": {

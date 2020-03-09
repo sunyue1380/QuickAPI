@@ -19,23 +19,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractEntityHandler implements EntityHandler{
+public class AbstractEntityHandler implements EntityHandler{
     public static Map<String,APIEntity> apiEntityMap = getEntityMap();
     /**获取实体类映射*/
     private static Map<String,APIEntity> getEntityMap(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.entityPackageNameList.toArray(new String[0]));
         EntityHandlerMapping[] entityHandlerMappings =EntityHandlerMapping.values();
+        AbstractEntityHandler entityHandler = null;
         for(EntityHandlerMapping entityHandlerMapping:entityHandlerMappings){
             try {
                 Class.forName(entityHandlerMapping.className);
-                AbstractEntityHandler entityHandler = (AbstractEntityHandler) entityHandlerMapping._class.newInstance();
-                return entityHandler.handleEntity(classList);
+                entityHandler = (AbstractEntityHandler) entityHandlerMapping._class.newInstance();
+                break;
             } catch (ClassNotFoundException e) {
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        throw new UnsupportedOperationException("不支持的Entity层环境!");
+        if(null==entityHandler){
+            entityHandler = new AbstractEntityHandler();
+        }
+        return entityHandler.handleEntity(classList);
     }
 
     private Map<String, APIEntity> handleEntity(List<Class> classList) {
@@ -121,8 +125,12 @@ public abstract class AbstractEntityHandler implements EntityHandler{
     }
 
     /**处理实体类*/
-    public abstract void handleClass(Class _class,APIEntity apiEntity);
+    public void handleClass(Class _class,APIEntity apiEntity){
+
+    }
 
     /**处理实体属性*/
-    public abstract void handleField(Field field, APIField apiField);
+    public void handleField(Field field, APIField apiField){
+
+    }
 }

@@ -151,11 +151,13 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             {
                 RequestPart requestPart = parameters[i].getAnnotation(RequestPart.class);
                 if(requestPart!=null||parameterType.getName().equals(MultipartFile.class.getName())){
-                    apiParameter.name = requestPart.value();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = requestPart.name();
+                    if(null!=requestPart){
+                        apiParameter.name = requestPart.value().isEmpty()?requestPart.name():requestPart.value();
+                        apiParameter.required = requestPart.required();
+                    }else{
+                        apiParameter.name = parameters[i].getName();
+                        apiParameter.required = true;
                     }
-                    apiParameter.required = requestPart.required();
                     apiParameter.requestType = "file";
                     api.contentType = "multipart/form-data;";
                 }

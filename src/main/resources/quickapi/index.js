@@ -275,6 +275,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 delete $scope.request[apiParameter.name];
             }
         }
+        operation.url = $scope.apiDocument.prefix+operation.url;
         let method = $scope.currentAPI.methods[0];
         if(method==="all"){
             method = "POST";

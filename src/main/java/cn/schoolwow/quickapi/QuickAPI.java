@@ -28,15 +28,27 @@ public class QuickAPI{
         return new QuickAPI();
     }
 
+    private volatile APIDocument apiDocument;
+
+    private QuickAPI(){
+        if(null==apiDocument){
+            synchronized (QuickAPI.class){
+                if(null==apiDocument){
+                    apiDocument = new APIDocument();
+                }
+            }
+        }
+    }
+
     /*文档标题*/
     public QuickAPI title(String title){
-        QuickAPIConfig.title = title;
+        apiDocument.title = title;
         return this;
     }
 
     /*文档描述*/
     public QuickAPI description(String description){
-        QuickAPIConfig.description = description;
+        apiDocument.description = description;
         return this;
     }
 
@@ -49,6 +61,12 @@ public class QuickAPI{
     /**Controller涉及的实体类层*/
     public QuickAPI entity(String packageName){
         QuickAPIConfig.entityPackageNameList.add(packageName);
+        return this;
+    }
+
+    /**接口路径前缀*/
+    public QuickAPI prefix(String prefix){
+        apiDocument.prefix = prefix;
         return this;
     }
 
@@ -102,9 +120,6 @@ public class QuickAPI{
         try {
             //生成API接口信息
             {
-                APIDocument apiDocument = new APIDocument();
-                apiDocument.title = QuickAPIConfig.title;
-                apiDocument.description = QuickAPIConfig.description;
                 apiDocument.date = new Date();
                 apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
                 apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
