@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.FieldDoc;
+import com.sun.javadoc.Tag;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -106,7 +107,15 @@ public class AbstractEntityHandler implements EntityHandler{
                 for (ClassDoc classDoc : classDocs) {
                     if (apiEntity.className.equals(classDoc.qualifiedName())) {
                         if(apiEntity.description==null){
-                            apiEntity.description = classDoc.getRawCommentText();
+                            apiEntity.description = classDoc.commentText();
+                        }
+                        Tag[] authorTags = classDoc.tags("author");
+                        if(null!=authorTags&&authorTags.length>0){
+                            apiEntity.author = authorTags[0].text();
+                        }
+                        Tag[] sinceTags = classDoc.tags("since");
+                        if(null!=sinceTags&&sinceTags.length>0){
+                            apiEntity.since = sinceTags[0].text();
                         }
                         for (APIField apiField : apiEntity.apiFields) {
                             for (FieldDoc fieldDoc : classDoc.fields()) {

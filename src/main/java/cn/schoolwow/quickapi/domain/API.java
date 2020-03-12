@@ -13,6 +13,10 @@ public class API {
     public String name;
     /**描述*/
     public String description;
+    /**作者*/
+    public String author;
+    /**日期*/
+    public String since;
     /**方法名*/
     public String methodName;
     /**请求编码*/

@@ -101,6 +101,14 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                                             api.name = apiNotes[0].text();
                                         }
                                         api.description = methodDoc.commentText().trim();
+                                        Tag[] authorTags = methodDoc.tags("author");
+                                        if(null!=authorTags&&authorTags.length>0){
+                                            api.author = authorTags[0].text();
+                                        }
+                                        Tag[] sinceTags = methodDoc.tags("since");
+                                        if(null!=sinceTags&&sinceTags.length>0){
+                                            api.since = sinceTags[0].text();
+                                        }
                                         //获取参数信息
                                         ParamTag[] paramTags = methodDoc.paramTags();
                                         for(APIParameter apiParameter:api.apiParameters){

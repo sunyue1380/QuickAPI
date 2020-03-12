@@ -255,9 +255,15 @@
                     <h5>{{currentAPI.url}}</h5>
                 </div>
             </div>
-            <div class="columns">
+            <div class="columns is-gapless" ng-show="currentAPI.name!=currentAPI.description">
                 <div class="content">
                     <p class="subtitle" ng-bind-html="currentAPI.description | trustAsHtml"></p>
+                </div>
+            </div>
+            <div class="columns is-gapless">
+                <div class="tags">
+                    <span class="tag is-info" ng-show="null!=currentAPI.author">{{currentAPI.author}}</span>
+                    <span class="tag is-info" ng-show="null!=currentAPI.since">{{currentAPI.since}}</span>
                 </div>
             </div>
             <div class="columns is-multiline">

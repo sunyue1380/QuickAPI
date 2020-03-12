@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.JarURLConnection;
-import java.net.URL;
+import java.net.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
@@ -186,11 +184,12 @@ public class QuickAPI{
         StringBuilder sb = new StringBuilder();
         Scanner scanner = null;
         try {
-            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(host+"/api/project/uploadAPI").openConnection();
+            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(host+"/api/projectVersion/uploadAPI").openConnection();
             httpURLConnection.setRequestMethod("POST");
             httpURLConnection.setDoInput(true);
             httpURLConnection.setDoOutput(true);
             httpURLConnection.getOutputStream().write(QuickAPIConfig.jsonObject.getBytes());
+            httpURLConnection.getOutputStream().flush();
             httpURLConnection.connect();
             int statusCode = httpURLConnection.getResponseCode();
 
@@ -340,15 +339,19 @@ public class QuickAPI{
                                 case "textarea":{
                                     q.put("name","root");
                                     p.put("consumes",JSON.parseArray("[\"application/json\"]"));
-                                    APIEntity apiEntity = apiDocument.apiEntityMap.get(apiParameter.type);
                                     JSONObject schema = new JSONObject();
                                     schema.put("$schema","http://json-schema.org/draft-04/schema#");
                                     schema.put("type","object");
-                                    JSONObject fieldProperty = new JSONObject();
-                                    for(APIField apiField:apiEntity.apiFields){
-                                        fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.description+"\"}"));
+                                    APIEntity apiEntity = apiDocument.apiEntityMap.get(apiParameter.type);
+                                    if(null!=apiEntity){
+                                        JSONObject fieldProperty = new JSONObject();
+                                        if(null!=apiEntity.apiFields){
+                                            for(APIField apiField:apiEntity.apiFields){
+                                                fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.description+"\"}"));
+                                            }
+                                        }
+                                        schema.put("properties",fieldProperty);
                                     }
-                                    schema.put("properties",fieldProperty);
                                     q.put("schema",schema);
                                 }break;
                                 case "file":{
