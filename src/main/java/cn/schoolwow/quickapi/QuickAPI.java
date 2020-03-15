@@ -186,9 +186,14 @@ public class QuickAPI{
         try {
             HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(host+"/api/projectVersion/uploadAPI").openConnection();
             httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setConnectTimeout(10000);
+            httpURLConnection.setReadTimeout(10000);
+            httpURLConnection.setUseCaches(false);
             httpURLConnection.setDoInput(true);
             httpURLConnection.setDoOutput(true);
-            httpURLConnection.getOutputStream().write(QuickAPIConfig.jsonObject.getBytes());
+            byte[] bytes = QuickAPIConfig.jsonObject.getBytes();
+            httpURLConnection.setFixedLengthStreamingMode(bytes.length);
+            httpURLConnection.getOutputStream().write(bytes);
             httpURLConnection.getOutputStream().flush();
             httpURLConnection.connect();
             int statusCode = httpURLConnection.getResponseCode();

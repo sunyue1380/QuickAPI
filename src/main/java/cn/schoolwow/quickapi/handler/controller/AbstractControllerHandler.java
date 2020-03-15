@@ -85,9 +85,12 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
             for(APIController apiController:apiControllerList){
                 for(ClassDoc classDoc:classDocs){
                     if(apiController.className.equals(classDoc.qualifiedName())){
-                        //获取控制器名称
+                        //获取控制器说明
                         {
-                            apiController.name = classDoc.commentText().trim();
+                            String name = classDoc.commentText().trim();
+                            if(!name.isEmpty()){
+                                apiController.name = name;
+                            }
                         }
                         //获取API名称和参数信息
                         {
@@ -96,6 +99,9 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
                                 for(MethodDoc methodDoc:methodDocs){
                                     if(api.methodName.equals(methodDoc.name())){
                                         api.name = methodDoc.commentText().trim();
+                                        if(api.name.isEmpty()){
+                                            api.name = methodDoc.name();
+                                        }
                                         Tag[] apiNotes = methodDoc.tags("apiNote");
                                         if(null!=apiNotes&&apiNotes.length>0){
                                             api.name = apiNotes[0].text();

@@ -112,7 +112,9 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             if(type instanceof ParameterizedType){
                 ParameterizedType pType = (ParameterizedType)type;
                 Type genericType = pType.getActualTypeArguments()[0];
-                parameterEntityNameList.add(genericType.getTypeName());
+                if(PackageUtil.isInEntityPackage(genericType.getTypeName())){
+                    parameterEntityNameList.add(genericType.getTypeName());
+                }
             }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
