@@ -49,17 +49,26 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 for(let j=0;j<apiList.length;j++){
                     let historyName =  $scope.apiDocument.apiControllerList[i].className+"#"+apiList[j].methods[0]+"_"+apiList[j].url;
                     for(let l=0;l<addList.length;l++){
-                        if(addList[l]==historyName){
+                        if(addList[l]===historyName){
                             addList[l] = apiList[j];
-                            console.log(addList[l]);
                         }
                     }
                     for(let l=0;l<modifyList.length;l++){
-                        if(modifyList[l]==historyName){
+                        if(modifyList[l]===historyName){
                             modifyList[l] = apiList[j];
-                            console.log(addList[l]);
                         }
                     }
+                }
+            }
+            //剔除已经不存在的接口
+            for(let l=0;l<addList.length;l++){
+                if(typeof(addList[l])=="string"){
+                    addList = addList.splice(l,1);
+                }
+            }
+            for(let l=0;l<modifyList.length;l++){
+                if(typeof(modifyList[l])=="string"){
+                    modifyList = modifyList.splice(l,1);
                 }
             }
         }
@@ -285,7 +294,11 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
                 let fd = new FormData();
                 for(let prop in $scope.request){
-                    fd.append(prop,document.getElementById(prop).files[0]);
+                    if(null!=document.getElementById(prop)){
+                        fd.append(prop,document.getElementById(prop).files[0]);
+                    }else{
+                        fd.append(prop,$scope.request[prop]);
+                    }
                 }
                 operation.data = fd;
             }else if($scope.currentAPI.contentType.indexOf("application/json")>=0){
