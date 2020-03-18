@@ -19,6 +19,9 @@ app.factory('formInterceptor', function ($q, $rootScope) {
         }
     }
 });
+app.config(function ($httpProvider) {
+    $httpProvider.interceptors.push('formInterceptor');
+});
 app.filter('trustAsHtml', function ($sce) {
     return function (value) {
         return $sce.trustAsHtml(value);
