@@ -34,6 +34,7 @@ public abstract class AbstractControllerHandler implements ControllerHandler{
 
     private List<APIController> getAPIList(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
+        classList.addAll(QuickAPIConfig.controllerClassList);
         List<APIController> apiControllerList = new ArrayList<>();
 
         for(Class _class:classList){

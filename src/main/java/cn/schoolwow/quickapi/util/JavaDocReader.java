@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class JavaDocReader {
     private static Logger logger = LoggerFactory.getLogger(JavaDocReader.class);
@@ -35,7 +33,12 @@ public class JavaDocReader {
 
     public static ClassDoc[] getControllerJavaDoc(){
         classDocList.clear();
-        for(String packageName:QuickAPIConfig.controllerPackageNameList){
+        Set<String> packageNameList = new LinkedHashSet<>();
+        packageNameList.addAll(QuickAPIConfig.controllerPackageNameList);
+        for(Class clazz:QuickAPIConfig.controllerClassList){
+            packageNameList.add(clazz.getPackage().getName());
+        }
+        for(String packageName:packageNameList){
             getJavaDoc(classPath,packageName);
         }
         return classDocList.toArray(new ClassDoc[0]);
@@ -43,7 +46,12 @@ public class JavaDocReader {
 
     public static ClassDoc[] getEntityJavaDoc() {
         classDocList.clear();
-        for(String packageName:QuickAPIConfig.entityPackageNameList){
+        Set<String> packageNameList = new LinkedHashSet<>();
+        packageNameList.addAll(QuickAPIConfig.entityPackageNameList);
+        for(Class clazz:QuickAPIConfig.entityClassList){
+            packageNameList.add(clazz.getPackage().getName());
+        }
+        for(String packageName:packageNameList){
             getJavaDoc(classPath,packageName);
         }
         return classDocList.toArray(new ClassDoc[0]);

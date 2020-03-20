@@ -25,6 +25,7 @@ public class AbstractEntityHandler implements EntityHandler{
     /**获取实体类映射*/
     private static Map<String,APIEntity> getEntityMap(){
         List<Class> classList = PackageUtil.scanPackage(QuickAPIConfig.entityPackageNameList.toArray(new String[0]));
+        classList.addAll(QuickAPIConfig.entityClassList);
         EntityHandlerMapping[] entityHandlerMappings =EntityHandlerMapping.values();
         AbstractEntityHandler entityHandler = null;
         for(EntityHandlerMapping entityHandlerMapping:entityHandlerMappings){

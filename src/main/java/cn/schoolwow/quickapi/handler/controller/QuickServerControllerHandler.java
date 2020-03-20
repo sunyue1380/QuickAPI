@@ -160,7 +160,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                         apiParameter.name = pathVariable.name();
                     }
                     apiParameter.required = pathVariable.required();
-                    apiParameter.position = "query";
+                    apiParameter.position = "path";
                 }
             }
             if(apiParameter.name==null||apiParameter.name.isEmpty()){

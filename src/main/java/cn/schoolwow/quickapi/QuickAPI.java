@@ -56,9 +56,21 @@ public class QuickAPI{
         return this;
     }
 
+    /**controller层*/
+    public QuickAPI controller(Class clazz){
+        QuickAPIConfig.controllerClassList.add(clazz);
+        return this;
+    }
+
     /**Controller涉及的实体类层*/
     public QuickAPI entity(String packageName){
         QuickAPIConfig.entityPackageNameList.add(packageName);
+        return this;
+    }
+
+    /**Controller涉及的实体类层*/
+    public QuickAPI entity(Class clazz){
+        QuickAPIConfig.entityClassList.add(clazz);
         return this;
     }
 
@@ -87,18 +99,12 @@ public class QuickAPI{
     }
 
     public QuickAPI ignorePackageName(String ignorePackageName){
-        if(QuickAPIConfig.ignorePackageNameList==null){
-            QuickAPIConfig.ignorePackageNameList = new ArrayList<>();
-        }
         QuickAPIConfig.ignorePackageNameList.add(ignorePackageName);
         return this;
     }
 
-    public QuickAPI ignoreClass(Class _class){
-        if(QuickAPIConfig.ignoreClassList==null){
-            QuickAPIConfig.ignoreClassList = new ArrayList<>();
-        }
-        QuickAPIConfig.ignoreClassList.add(_class);
+    public QuickAPI ignoreClass(String ignoreClassName){
+        QuickAPIConfig.ignoreClassList.add(ignoreClassName);
         return this;
     }
 

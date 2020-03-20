@@ -109,24 +109,27 @@ public class PackageUtil {
 
     /**根据规则过滤类*/
     private static List<Class> filterClass(List<Class> classList){
-        Stream<Class> stream = classList.stream().filter((_class)->{
+        Stream<Class> stream = classList.stream().filter((clazz)->{
             //排除枚举类型
-            if(_class.isEnum()){
+            if(clazz.isEnum()){
                 return false;
             }
             boolean result = true;
             //根据类过滤
-            if(QuickAPIConfig.ignoreClassList!=null){
-                if(QuickAPIConfig.ignoreClassList.contains(_class)){
-                    logger.warn("[忽略类名]类名:{}!",_class.getName());
-                    result = false;
+            if(!QuickAPIConfig.ignoreClassList.isEmpty()){
+                //为保证忽略内部类,需要以下处理
+                for(String ignoreClassName:QuickAPIConfig.ignoreClassList){
+                    if(clazz.getName().startsWith(ignoreClassName)){
+                        logger.warn("[忽略类名]类名:{}!",clazz.getName());
+                        result = false;
+                    }
                 }
             }
             //根据包名过滤
-            if(QuickAPIConfig.ignorePackageNameList!=null){
+            if(!QuickAPIConfig.ignorePackageNameList.isEmpty()){
                 for(String ignorePackageName:QuickAPIConfig.ignorePackageNameList){
-                    if(_class.getName().contains(ignorePackageName)){
-                        logger.warn("[忽略包名]包名:{}类名:{}",ignorePackageName,_class.getName());
+                    if(clazz.getName().contains(ignorePackageName)){
+                        logger.warn("[忽略包名]包名:{}类名:{}",ignorePackageName,clazz.getName());
                         result = false;
                     }
                 }

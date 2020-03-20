@@ -205,16 +205,16 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.currentEntity = null;
         $scope.view = "api";
         $scope.currentAPI = api;
+        $scope.response = null;
+
         $scope.request = {};
         let apiParameters = $scope.currentAPI.apiParameters;
         for(let i=0;i<apiParameters.length;i++){
             $scope.request[apiParameters[i].name] = apiParameters[i].defaultValue;
-            if("textarea"==apiParameters[i].requestType){
+            if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
                 $scope.request[apiParameters[i].name] = $scope.apiDocument.apiEntityMap[apiParameters[i].type].instance;
             }
         }
-        $scope.response = null;
-
         let requestValue = localStorage.getItem($scope.currentAPI.url);
         if(null!=requestValue&&""!=requestValue){
             $scope.request = JSON.parse(requestValue);
@@ -282,7 +282,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         //处理路径
         for(let i=0;i<apiParameters.length;i++){
             let apiParameter = apiParameters[i];
-            if(apiParameter.position==="query"){
+            if(apiParameter.position==="path"){
                 operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.request[apiParameter.name]);
                 delete $scope.request[apiParameter.name];
             }
