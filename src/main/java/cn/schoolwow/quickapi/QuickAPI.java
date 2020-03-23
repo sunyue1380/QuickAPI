@@ -4,12 +4,10 @@ import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
 import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
-import cn.schoolwow.quickdao.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.sun.tools.javac.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,81 +36,123 @@ public class QuickAPI{
         }
     }
 
-    /*文档标题*/
+    /**
+     * 指定文档标题
+     * @param title 指定接口文档标题(唯一标识)
+     * */
     public QuickAPI title(String title){
         apiDocument.title = title;
         return this;
     }
 
-    /*文档描述*/
+    /**
+    * 设置文档描述
+    * @param description 文档描述
+    */
     public QuickAPI description(String description){
         apiDocument.description = description;
         return this;
     }
 
-    /**controller层*/
+    /**
+     * 扫描controller层
+     * @param packageName 扫描Controller包
+     * */
     public QuickAPI controller(String packageName){
         QuickAPIConfig.controllerPackageNameList.add(packageName);
         return this;
     }
 
-    /**controller层*/
+    /**
+     * 扫描controller层
+     * @param clazz 扫描单个Controller类
+     * */
     public QuickAPI controller(Class clazz){
         QuickAPIConfig.controllerClassList.add(clazz);
         return this;
     }
 
-    /**Controller涉及的实体类层*/
+    /**Controller涉及的实体类层
+     * @param packageName 扫描实体类包
+     * */
     public QuickAPI entity(String packageName){
         QuickAPIConfig.entityPackageNameList.add(packageName);
         return this;
     }
 
-    /**Controller涉及的实体类层*/
+    /**
+     * Controller涉及的实体类层
+     * @param clazz 扫描单个实体类
+     * */
     public QuickAPI entity(Class clazz){
         QuickAPIConfig.entityClassList.add(clazz);
         return this;
     }
 
-    /**接口路径前缀*/
+    /**
+     * 接口路径前缀
+     * @param prefix 接口路径前缀(context-path)
+     * */
     public QuickAPI prefix(String prefix){
         apiDocument.prefix = prefix;
         return this;
     }
 
-    /**文档路径地址*/
+    /**
+     * 文档路径地址
+     * @param url 指定文档访问路径
+     * */
     public QuickAPI url(String url){
         QuickAPIConfig.url = url;
         return this;
     }
 
-    /**文档生成目录*/
+    /**
+     * 文档生成目录
+     * @param directory 指定文档生成目录
+     * */
     public QuickAPI directory(String directory){
         QuickAPIConfig.directory = directory;
         return this;
     }
 
-    /**Java源代码路径*/
+    /**
+     * Java源代码路径
+     * @param sourcePath 指定java源代码所在目录
+     * */
     public QuickAPI sourcePath(String sourcePath){
         QuickAPIConfig.sourcePath = sourcePath;
         return this;
     }
 
+    /**
+     * 忽略包名
+     * @param ignorePackageName 要忽略的包名
+     * */
     public QuickAPI ignorePackageName(String ignorePackageName){
         QuickAPIConfig.ignorePackageNameList.add(ignorePackageName);
         return this;
     }
 
+    /**
+     * 忽略类
+     * @param ignoreClassName 要忽略的类名
+     * */
     public QuickAPI ignoreClass(String ignoreClassName){
         QuickAPIConfig.ignoreClassList.add(ignoreClassName);
         return this;
     }
 
+    /**
+     * 扫描类过滤接口
+     * @param predicate 函数式接口
+     * */
     public QuickAPI filter(Predicate<Class> predicate){
         QuickAPIConfig.predicate = predicate;
         return this;
     }
 
+    /**生成接口文档*/
     public QuickAPI generate(){
         //检测Java
         {
@@ -177,21 +217,38 @@ public class QuickAPI{
         return this;
     }
 
-    /**上传到服务器*/
+    /**上传到默认服务器*/
     public void upload() {
         upload("https://api.schoolwow.cn");
     }
 
-    /**上传到服务器*/
+    /**
+     * 上传到服务器
+     * @param host 服务器地址
+     * */
     public void upload(String host) {
+        upload(host,null);
+    }
+    /**
+     * 上传到服务器
+     * @param host 服务器地址
+     * @param proxy http代理
+     * */
+    public void upload(String host, Proxy proxy) {
         if(QuickAPIConfig.jsonObject==null||QuickAPIConfig.jsonObject.isEmpty()){
             throw new IllegalArgumentException("请先调用generate()方法!");
         }
         StringBuilder sb = new StringBuilder();
         Scanner scanner = null;
+        HttpURLConnection httpURLConnection = null;
         try {
-            HttpURLConnection httpURLConnection = (HttpURLConnection) new URL(host+"/api/projectVersion/uploadAPI").openConnection();
+            if(null==proxy){
+                httpURLConnection = (HttpURLConnection) new URL(host+"/api/projectVersion/uploadAPI").openConnection();
+            }else{
+                httpURLConnection = (HttpURLConnection) new URL(host+"/api/projectVersion/uploadAPI").openConnection(proxy);
+            }
             httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setRequestProperty("Content-Type","application/json; charset=utf-8");
             httpURLConnection.setConnectTimeout(10000);
             httpURLConnection.setReadTimeout(10000);
             httpURLConnection.setUseCaches(false);

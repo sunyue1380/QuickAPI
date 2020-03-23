@@ -46,7 +46,7 @@
             </p>
             <ul class="menu-list" ng-show="searchText==null||''==searchText">
                 <li><a ng-class="{'is-active':val==currentEntity}"
-                       ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);">{{val.simpleName}}{{val.description==null?'':'('+val.description+')'}}</a>
+                       ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);">{{val.simpleName}}{{val.description==null||val.description==''?'':'('+val.description+')' | trustAsHtml}}</a>
                 </li>
             </ul>
             <p class="menu-label">

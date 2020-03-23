@@ -1,6 +1,6 @@
 <div class="columns">
     <div class="column is-12">
-        <h1 class="title">{{entity.simpleName}}({{entity.description}})</h1>
+        <h1 class="title">{{entity.simpleName}}{{entity.description==null||entity.description==''?'':'('+entity.description+')' | trustAsHtml}}</h1>
         <table class="table is-fullwidth is-large">
             <thead>
             <tr>
