@@ -181,17 +181,28 @@ public class QuickAPI{
                 URL url = ClassLoader.getSystemResource("quickapi");
                 switch(url.getProtocol()){
                     case "file":{
-                        String basePath = url.getPath().substring(1).replace("/","\\");
-                        Files.walkFileTree(Paths.get(basePath),new SimpleFileVisitor<Path>(){
+                        Path target = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url);
+                        if(!Files.exists(target)){
+                            Files.createDirectory(target);
+                        }
+                        Path source = Paths.get(url.toURI());
+                        int sourceNameCount = source.getNameCount();
+                        Files.walkFileTree(source,new SimpleFileVisitor<Path>(){
+                            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                                    throws IOException {
+                                if(dir.compareTo(source)!=0){
+                                    // 获取相对原路径的路径名，然后组合到target上
+                                    Path subPath = target.resolve(dir.subpath(sourceNameCount, dir.getNameCount()));
+                                    Files.createDirectories(subPath);
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+
                             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                     throws IOException
                             {
-                                String relativePath = file.toFile().getAbsolutePath().replace(basePath,"");
-                                File target = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/"+relativePath);
-                                if(!target.getParentFile().exists()){
-                                    target.getParentFile().mkdirs();
-                                }
-                                Files.copy(file,target.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                                Files.copy(file, target.resolve(file.subpath(sourceNameCount, file.getNameCount())),
+                                        StandardCopyOption.REPLACE_EXISTING);
                                 return FileVisitResult.CONTINUE;
                             }
                         });

@@ -95,14 +95,50 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     };
 
+    //tab页设置
+    $scope.activeTabName = "";
+    $scope.tabMap = {
+        "/quickapi/history":{
+            "name": "文档历史",
+            "view": "history"
+        }
+    };
+    $scope.changeToTab = function(key){
+        let val = $scope.tabMap[key];
+        $scope.view = val.view;
+        $scope.activeTabName = key;
+        switch($scope.view){
+            case "entity":{
+                $scope.currentEntity = val.entity;
+            };break;
+            case "api":{
+                $scope.currentAPI = val.api;
+            };break;
+        }
+    };
+    $scope.closeTab = function(key){
+        delete $scope.tabMap[key];
+    };
+
+    //文档历史
     $scope.view = "history";
     $scope.showHistory = function(){
         $scope.view = "history";
+        $scope.tabMap["/quickapi/history"] = {
+            "name": "文档历史",
+            "view": "history"
+        };
+        $scope.activeTabName = "/quickapi/history";
     };
 
     //全局头部
     $scope.showGlobalHeaders = function(){
         $scope.view = "globalHeader";
+        $scope.tabMap["/quickapi/globalHeader"] = {
+            "name": "全局头部",
+            "view": "globalHeader"
+        };
+        $scope.activeTabName = "/quickapi/globalHeader";
     };
     $scope.headers = $scope.getFromLocalStorage("headers",{});
     $scope.addHeader = function(){
@@ -121,6 +157,11 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     //环境设置
     $scope.showEnvironment = function(){
         $scope.view = "environment";
+        $scope.tabMap["/quickapi/environment"] = {
+            "name": "环境设置",
+            "view": "environment"
+        };
+        $scope.activeTabName = "/quickapi/environment";
     };
 
     $scope.environmentList = $scope.getFromLocalStorage("environmentList",[]);
@@ -166,8 +207,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     //实体类显示
     $scope.currentEntity = null;
     $scope.setCurrentEntity = function(entity){
-        $scope.currentAPI = null;
         $scope.view = "entity";
+        $scope.tabMap["/quickapi/entity/"+entity.className] = {
+            "name": entity.simpleName,
+            "view": "entity",
+            "entity":entity
+        };
+        $scope.activeTabName = "/quickapi/entity/"+entity.className;
+
         $scope.currentEntity = entity;
         $location.hash("top");
         $anchorScroll();
@@ -202,8 +249,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     //显示API详情
     $scope.currentAPI = null;
     $scope.setCurrentAPI = function(api){
-        $scope.currentEntity = null;
         $scope.view = "api";
+        $scope.tabMap[api.url+api.methods[0]] = {
+            "name": api.name,
+            "view": "api",
+            "api": api
+        };
+        $scope.activeTabName = api.url+api.methods[0];
+
         $scope.currentAPI = api;
         $scope.response = null;
 
@@ -212,7 +265,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         for(let i=0;i<apiParameters.length;i++){
             $scope.request[apiParameters[i].name] = apiParameters[i].defaultValue;
             if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
-                $scope.request[apiParameters[i].name] = $scope.apiDocument.apiEntityMap[apiParameters[i].type].instance;
+                let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
+                $scope.request[apiParameters[i].name] = JSON.stringify(data,null,4);
             }
         }
         let requestValue = localStorage.getItem($scope.currentAPI.url);
