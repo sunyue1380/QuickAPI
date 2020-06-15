@@ -1,5 +1,6 @@
 package cn.schoolwow.quickapi;
 
+import cn.schoolwow.quickapi.handler.controller.ControllerHandlerMapping;
 import org.junit.Test;
 
 public class QuickAPITest {
@@ -7,11 +8,11 @@ public class QuickAPITest {
     @Test
     public void build() {
         QuickAPI.newInstance()
+                .controllerHandlerMapping(ControllerHandlerMapping.SpringMVC)
                 .controller("cn.schoolwow.quickapi.controller")
-                .entity("cn.schoolwow.quickapi.entity")
-                .directory("./src/main/webapps")
+                .sourcePath(System.getProperty("user.dir")+"/src/test/java")
+                .directory("./src/main/resources")
                 .url("/doc")
-                .generate()
-                .upload("http://127.0.0.1:9000");
+                .generate();
     }
 }

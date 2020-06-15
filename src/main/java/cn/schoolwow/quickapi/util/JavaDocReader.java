@@ -2,21 +2,18 @@ package cn.schoolwow.quickapi.util;
 
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.RootDoc;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
 public class JavaDocReader {
-    private static Logger logger = LoggerFactory.getLogger(JavaDocReader.class);
-    private static List<ClassDoc> classDocList = new ArrayList<>();
+    private static ClassDoc[] classDocs = new ClassDoc[0];
     public static class Doclet {
         public Doclet() {
         }
         public static boolean start(RootDoc root) {
-            classDocList.addAll(Arrays.asList(root.classes()));
+            classDocs = root.classes();
             return true;
         }
     }
@@ -31,34 +28,20 @@ public class JavaDocReader {
         classPath = classPathBuilder.toString();
     }
 
-    public static ClassDoc[] getControllerJavaDoc(){
-        classDocList.clear();
-        Set<String> packageNameList = new LinkedHashSet<>();
-        packageNameList.addAll(QuickAPIConfig.controllerPackageNameList);
-        for(Class clazz:QuickAPIConfig.controllerClassList){
-            packageNameList.add(clazz.getPackage().getName());
+    public static ClassDoc[] getJavaDoc(Set<String> classNameSet){
+        if(null==classNameSet||classNameSet.isEmpty()){
+            return new ClassDoc[0];
         }
-        for(String packageName:packageNameList){
-            getJavaDoc(classPath,packageName);
+        Set<String> packageNameSet = new HashSet<>();
+        for(String className:classNameSet){
+            try {
+                packageNameSet.add(ClassLoader.getSystemClassLoader().loadClass(className).getPackage().getName());
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
         }
-        return classDocList.toArray(new ClassDoc[0]);
-    }
 
-    public static ClassDoc[] getEntityJavaDoc() {
-        classDocList.clear();
-        Set<String> packageNameList = new LinkedHashSet<>();
-        packageNameList.addAll(QuickAPIConfig.entityPackageNameList);
-        for(Class clazz:QuickAPIConfig.entityClassList){
-            packageNameList.add(clazz.getPackage().getName());
-        }
-        for(String packageName:packageNameList){
-            getJavaDoc(classPath,packageName);
-        }
-        return classDocList.toArray(new ClassDoc[0]);
-    }
-
-    private static void getJavaDoc(String classPath,String packageName){
-        String[] commands = {"-doclet",
+        List<String> commands = new ArrayList<>(Arrays.asList("-doclet",
                 Doclet.class.getName(),
                 "-encoding","utf-8",
                 "-private",
@@ -66,9 +49,13 @@ public class JavaDocReader {
                 "-classpath",
                 classPath,
                 "-sourcepath",
-                QuickAPIConfig.sourcePath,
-                "-subpackages",
-                packageName};
-        com.sun.tools.javadoc.Main.execute(commands);
+                QuickAPIConfig.sourcePath));
+        Iterator<String> iterator = packageNameSet.iterator();
+        while(iterator.hasNext()){
+            commands.add("-subpackages");
+            commands.add(iterator.next());
+        }
+        com.sun.tools.javadoc.Main.execute(commands.toArray(new String[0]));
+        return classDocs;
     }
 }

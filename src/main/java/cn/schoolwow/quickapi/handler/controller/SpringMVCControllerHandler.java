@@ -1,9 +1,8 @@
 package cn.schoolwow.quickapi.handler.controller;
 
 import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.domain.APIParameter;
-import cn.schoolwow.quickapi.util.PackageUtil;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +20,25 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
     private static Class[] mappingClasses = new Class[]{
             GetMapping.class,PostMapping.class,PutMapping.class,DeleteMapping.class,PatchMapping.class
     };
+    /**需要忽略的注解*/
+    private static Class[] ignoreAnnotationClasses = new Class[]{SessionAttribute.class};
+
+    @Override
+    public boolean isValidController(Class clazz) {
+        //是否任一方法存在RequestMapping注解
+        for(Method method: clazz.getDeclaredMethods()){
+            if(null!=method.getDeclaredAnnotation(RequestMapping.class)){
+                return true;
+            }
+            for(Class _class:mappingClasses) {
+                Annotation annotation = method.getDeclaredAnnotation(_class);
+                if (annotation != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     @Override
     public String getBaseUrl(Class _class) {
@@ -28,6 +46,9 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
         RequestMapping classRequestMapping = (RequestMapping) _class.getDeclaredAnnotation(RequestMapping.class);
         if(classRequestMapping!=null){
             baseUrl = classRequestMapping.value()[0];
+            if(baseUrl.charAt(0)!='/'){
+                baseUrl = "/"+baseUrl;
+            }
         }
         return baseUrl;
     }
@@ -44,6 +65,9 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             try {
                 String[] values = (String[]) _class.getDeclaredMethod("value").invoke(annotation);
                 api.url = values[0];
+                if(api.url.charAt(0)!='/'){
+                    api.url = "/" + api.url;
+                }
             }catch (Exception e){
                 continue;
             }
@@ -63,6 +87,9 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             api.methods = new String[]{"all"};
         }
         api.url = methodRequestMapping.value()[0];
+        if(api.url.charAt(0)!='/'){
+            api.url = "/" + api.url;
+        }
     }
 
     @Override
@@ -73,48 +100,23 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
-            //排除特定类型的参数
-            if(parameterType.getName().startsWith("javax.servlet")){
-                continue;
-            }
-            //SessionAttribute
-            {
-                SessionAttribute sessionAttribute = parameters[i].getAnnotation(SessionAttribute.class);
-                if(sessionAttribute!=null){
+            for(String ignorePackageName:QuickAPIConfig.ignorePackageNameList){
+                if(parameterType.getName().startsWith(ignorePackageName)){
                     continue;
                 }
             }
-            //处理复杂对象
-            if(PackageUtil.isInEntityPackage(parameterType.getName())){
-                if(null==parameters[i].getDeclaredAnnotation(RequestBody.class)){
-                    for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
-                        if(apiField.ignore){
-                            continue;
-                        }
-                        APIParameter apiParameter = new APIParameter();
-                        apiParameter.name = apiField.name;
-                        apiParameter.description = apiField.description;
-                        apiParameter.required = false;
-                        apiParameter.type = apiField.className;
-                        if(apiParameter.type.equals(MultipartFile.class.getName())){
-                            apiParameter.requestType = "file";
-                            api.contentType = "multipart/form-data;";
-                        }
-                        apiParameterList.add(apiParameter);
-                    }
+            for(Class clazz:ignoreAnnotationClasses){
+                if(null!=parameters[i].getAnnotation(clazz)){
                     continue;
-                }else{
-                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
             }
+
             //处理泛型
             Type type = parameters[i].getParameterizedType();
             if(type instanceof ParameterizedType){
                 ParameterizedType pType = (ParameterizedType)type;
                 Type genericType = pType.getActualTypeArguments()[0];
-                if(PackageUtil.isInEntityPackage(genericType.getTypeName())){
-                    parameterEntityNameList.add(genericType.getTypeName());
-                }
+                parameterEntityNameList.addAll(getRecycleEntity(genericType.getTypeName()));
             }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
@@ -172,6 +174,7 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json; charset=utf-8";
+                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
             }
             //PathVaribale

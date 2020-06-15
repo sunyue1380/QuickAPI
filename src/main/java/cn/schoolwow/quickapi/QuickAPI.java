@@ -2,6 +2,7 @@ package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
+import cn.schoolwow.quickapi.handler.controller.ControllerHandlerMapping;
 import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import com.alibaba.fastjson.JSON;
@@ -12,11 +13,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.HttpURLConnection;
+import java.net.JarURLConnection;
+import java.net.Proxy;
+import java.net.URL;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
 
 public class QuickAPI{
     private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
@@ -24,16 +35,7 @@ public class QuickAPI{
         return new QuickAPI();
     }
 
-    private volatile APIDocument apiDocument;
-
     private QuickAPI(){
-        if(null==apiDocument){
-            synchronized (QuickAPI.class){
-                if(null==apiDocument){
-                    apiDocument = new APIDocument();
-                }
-            }
-        }
     }
 
     /**
@@ -55,6 +57,15 @@ public class QuickAPI{
     }
 
     /**
+     * 制定控制器层环境
+     * @param controllerHandlerMapping SpringMVC或者QuickServer
+     * */
+    public QuickAPI controllerHandlerMapping(ControllerHandlerMapping controllerHandlerMapping){
+        QuickAPIConfig.controllerHandlerMapping  = controllerHandlerMapping;
+        return this;
+    }
+
+    /**
      * 扫描controller层
      * @param packageName 扫描Controller包
      * */
@@ -65,27 +76,10 @@ public class QuickAPI{
 
     /**
      * 扫描controller层
-     * @param clazz 扫描单个Controller类
+     * @param className 扫描单个Controller类
      * */
-    public QuickAPI controller(Class clazz){
-        QuickAPIConfig.controllerClassList.add(clazz);
-        return this;
-    }
-
-    /**Controller涉及的实体类层
-     * @param packageName 扫描实体类包
-     * */
-    public QuickAPI entity(String packageName){
-        QuickAPIConfig.entityPackageNameList.add(packageName);
-        return this;
-    }
-
-    /**
-     * Controller涉及的实体类层
-     * @param clazz 扫描单个实体类
-     * */
-    public QuickAPI entity(Class clazz){
-        QuickAPIConfig.entityClassList.add(clazz);
+    public QuickAPI controllerClass(String className){
+        QuickAPIConfig.controllerClassNameList.add(className);
         return this;
     }
 
@@ -145,9 +139,9 @@ public class QuickAPI{
 
     /**
      * 扫描类过滤接口
-     * @param predicate 函数式接口
+     * @param predicate 函数式接口 参数为类名
      * */
-    public QuickAPI filter(Predicate<Class> predicate){
+    public QuickAPI filter(Predicate<String> predicate){
         QuickAPIConfig.predicate = predicate;
         return this;
     }
@@ -162,22 +156,22 @@ public class QuickAPI{
             }
         }
         try {
+            AbstractControllerHandler.handleApiControllerList();
+            AbstractEntityHandler.handleEntityMap();
             //生成API接口信息
             {
-                apiDocument.date = new Date();
-                apiDocument.apiControllerList = AbstractControllerHandler.apiControllerList;;
-                apiDocument.apiEntityMap = AbstractEntityHandler.apiEntityMap;
                 //生成json数据
                 {
                     File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
-                    compareJSON(file,apiDocument);
+                    compareJSON(file);
                     String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
                     generateFile(data,file);
                     QuickAPIConfig.jsonObject = data;
+                    logger.info("[文档路径]{}",file.getAbsolutePath());
                 }
                 //生成swagger.json文件
                 {
-                    String data = generateSwagger(apiDocument);
+                    String data = generateSwagger();
                     File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/swagger.json");
                     generateFile(data,file);
                 }
@@ -187,7 +181,20 @@ public class QuickAPI{
                 URL url = ClassLoader.getSystemResource("quickapi");
                 switch(url.getProtocol()){
                     case "file":{
-
+                        String basePath = url.getPath().substring(1).replace("/","\\");
+                        Files.walkFileTree(Paths.get(basePath),new SimpleFileVisitor<Path>(){
+                            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                    throws IOException
+                            {
+                                String relativePath = file.toFile().getAbsolutePath().replace(basePath,"");
+                                File target = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/"+relativePath);
+                                if(!target.getParentFile().exists()){
+                                    target.getParentFile().mkdirs();
+                                }
+                                Files.copy(file,target.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                                return FileVisitResult.CONTINUE;
+                            }
+                        });
                     };break;
                     case "jar":{
                         JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
@@ -285,7 +292,7 @@ public class QuickAPI{
     }
 
     /**比较新老JSON文件,获取变更信息*/
-    private void compareJSON(File file,APIDocument newAPIDocument) throws FileNotFoundException {
+    private void compareJSON(File file) throws FileNotFoundException {
         if(!file.exists()){
             return;
         }
@@ -298,7 +305,7 @@ public class QuickAPI{
         APIDocument oldAPIDocument = JSON.parseObject(builder.toString()).toJavaObject(APIDocument.class);
         //比对API
         List<APIController> oldAPIControllerList = oldAPIDocument.apiControllerList;
-        List<APIController> newAPIControllerList = newAPIDocument.apiControllerList;
+        List<APIController> newAPIControllerList = apiDocument.apiControllerList;
         //提取变更列表
         APIHistory apiHistory = new APIHistory();
         for(APIController newAPIController:newAPIControllerList){
@@ -361,18 +368,18 @@ public class QuickAPI{
         if(!apiHistory.addList.isEmpty()||!apiHistory.modifyList.isEmpty()||!apiHistory.deleteList.isEmpty()){
             oldAPIDocument.apiHistoryList.add(0,apiHistory);
         }
-        newAPIDocument.apiHistoryList = oldAPIDocument.apiHistoryList;
+        apiDocument.apiHistoryList = oldAPIDocument.apiHistoryList;
     }
 
-    private String generateSwagger(APIDocument apiDocument){
+    private String generateSwagger(){
         JSONObject o = new JSONObject();
         o.put("swagger","2.0");
-        o.put("info",JSON.parseObject("{\"title\":\""+apiDocument.title+"\",\"version\":\"last\"}"));
+        o.put("info",JSON.parseObject("{\"title\":\""+ apiDocument.title+"\",\"version\":\"last\"}"));
         o.put("basePath","/");
         //添加tag
         {
             JSONArray tagArray = new JSONArray();
-            for(APIController apiController:apiDocument.apiControllerList){
+            for(APIController apiController: apiDocument.apiControllerList){
                 tagArray.add(JSON.parseObject("{\"name\":\""+apiController.name+"\",\"description\":null}"));
             }
             o.put("tags",tagArray);
@@ -381,7 +388,7 @@ public class QuickAPI{
         //添加path
         {
             JSONObject paths = new JSONObject();
-            for(APIController apiController:apiDocument.apiControllerList){
+            for(APIController apiController: apiDocument.apiControllerList){
                 for(API api:apiController.apiList){
                     JSONObject p = new JSONObject();
                     p.put("tags",JSON.parseArray("[\""+apiController.name+"\"]"));

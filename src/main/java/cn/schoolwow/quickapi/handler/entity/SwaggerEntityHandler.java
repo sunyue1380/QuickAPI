@@ -9,8 +9,8 @@ import java.lang.reflect.Field;
 
 public class SwaggerEntityHandler extends AbstractEntityHandler{
     @Override
-    public void handleClass(Class _class, APIEntity apiEntity) {
-        ApiModel apiModel = (ApiModel) _class.getAnnotation(ApiModel.class);
+    public void handleClass(Class clazz, APIEntity apiEntity) {
+        ApiModel apiModel = (ApiModel) clazz.getAnnotation(ApiModel.class);
         if (null!=apiModel) {
             apiEntity.description = apiModel.description();
             if(null==apiEntity.description|| apiEntity.description.isEmpty()){

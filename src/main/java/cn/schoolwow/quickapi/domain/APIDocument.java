@@ -11,7 +11,7 @@ public class APIDocument {
     /**文档描述*/
     public String description;
     /**生成时间*/
-    public Date date;
+    public Date date = new Date();
     /**路径前缀*/
     public String prefix = "";
     /**控制器*/

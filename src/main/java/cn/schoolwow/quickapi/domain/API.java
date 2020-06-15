@@ -23,6 +23,8 @@ public class API {
     public String contentType = "application/x-www-form-urlencoded";
     /**请求参数*/
     public APIParameter[] apiParameters = new APIParameter[0];
+    /**实际参数个数(用于与JavaDoc匹配)*/
+    public volatile int actualParameterLength;
     /**返回值*/
     public String returnValue;
     /**请求参数实体类信息*/

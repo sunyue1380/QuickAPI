@@ -3,7 +3,7 @@ package cn.schoolwow.quickapi.handler.controller;
 import cn.schoolwow.quickapi.domain.API;
 import cn.schoolwow.quickapi.domain.APIField;
 import cn.schoolwow.quickapi.domain.APIParameter;
-import cn.schoolwow.quickapi.util.PackageUtil;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
 import cn.schoolwow.quickserver.request.RequestMeta;
@@ -19,10 +19,22 @@ import java.util.List;
 
 public class QuickServerControllerHandler extends AbstractControllerHandler{
     private static Class[] ignoreParameter = new Class[]{RequestMeta.class, ResponseMeta.class, SessionMeta.class};
+
     @Override
-    public String getBaseUrl(Class _class) {
+    public boolean isValidController(Class clazz) {
+        //是否任一方法存在RequestMapping注解
+        for(Method method: clazz.getDeclaredMethods()){
+            if(null!=method.getDeclaredAnnotation(RequestMapping.class)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String getBaseUrl(Class clazz) {
         String baseUrl = "";
-        RequestMapping classRequestMapping = (RequestMapping) _class.getDeclaredAnnotation(RequestMapping.class);
+        RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
         if(classRequestMapping!=null){
             baseUrl = classRequestMapping.value();
         }
@@ -66,36 +78,34 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                 continue;
             }
             //处理复杂对象
-            if(PackageUtil.isInEntityPackage(parameterType.getName())){
-                if(null==parameter.getDeclaredAnnotation(RequestBody.class)){
-                    for(APIField apiField:apiEntityMap.get(parameterType.getName()).apiFields){
-                        if(apiField.ignore){
-                            continue;
-                        }
-                        APIParameter apiParameter = new APIParameter();
-                        apiParameter.name = apiField.name;
-                        apiParameter.description = apiField.description;
-                        apiParameter.required = false;
-                        apiParameter.type = apiField.className;
-                        if(apiParameter.type.equals(MultipartFile.class.getName())){
-                            apiParameter.requestType = "file";
-                            api.contentType = "multipart/form-data;";
-                        }
-                        apiParameterList.add(apiParameter);
+            if(null==parameter.getDeclaredAnnotation(RequestBody.class)){
+                for(APIField apiField: QuickAPIConfig.apiDocument.apiEntityMap.get(parameterType.getName()).apiFields){
+                    if(apiField.ignore){
+                        continue;
                     }
-                    continue;
-                }else{
-                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
+                    APIParameter apiParameter = new APIParameter();
+                    apiParameter.name = apiField.name;
+                    apiParameter.description = apiField.description;
+                    apiParameter.required = false;
+                    apiParameter.type = apiField.className;
+                    if(apiParameter.type.equals(MultipartFile.class.getName())){
+                        apiParameter.requestType = "file";
+                        api.contentType = "multipart/form-data;";
+                    }
+                    apiParameterList.add(apiParameter);
+                    super.apiParameterList.add(apiParameter);
                 }
+                continue;
+            }else{
+                parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
             }
+
             //处理泛型
             Type type = parameter.getParameterizedType();
             if(type instanceof ParameterizedType){
                 ParameterizedType pType = (ParameterizedType)type;
                 Type genericType = pType.getActualTypeArguments()[0];
-                if(PackageUtil.isInEntityPackage(genericType.getTypeName())){
-                    parameterEntityNameList.add(genericType.getTypeName());
-                }
+                parameterEntityNameList.add(genericType.getTypeName());
             }
             APIParameter apiParameter = new APIParameter();
             //RequestParam
