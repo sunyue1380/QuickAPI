@@ -1,9 +1,6 @@
 package cn.schoolwow.quickapi.domain;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class APIDocument {
     /**文档标题*/
@@ -17,7 +14,7 @@ public class APIDocument {
     /**控制器*/
     public List<APIController> apiControllerList;
     /**实体类*/
-    public Map<String,APIEntity> apiEntityMap;
+    public Map<String,APIEntity> apiEntityMap = new HashMap<>();
     /**更新历史记录*/
     public List<APIHistory> apiHistoryList = new ArrayList<>();
 }

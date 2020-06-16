@@ -1,10 +1,9 @@
 package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.*;
-import cn.schoolwow.quickapi.handler.controller.AbstractControllerHandler;
-import cn.schoolwow.quickapi.handler.controller.ControllerHandlerMapping;
-import cn.schoolwow.quickapi.handler.entity.AbstractEntityHandler;
+import cn.schoolwow.quickapi.handler.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import cn.schoolwow.quickapi.util.QuickAPIUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -19,10 +18,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -31,6 +27,13 @@ import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
 
 public class QuickAPI{
     private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
+    /**处理器*/
+    private static Handler[] handlers = new Handler[]{
+            new QuickServerHandler(),
+            new SpringMVCHandler(),
+            new QuickDAOHandler(),
+            new SwaggerHandler()
+    };
     public static QuickAPI newInstance(){
         return new QuickAPI();
     }
@@ -53,15 +56,6 @@ public class QuickAPI{
     */
     public QuickAPI description(String description){
         apiDocument.description = description;
-        return this;
-    }
-
-    /**
-     * 制定控制器层环境
-     * @param controllerHandlerMapping SpringMVC或者QuickServer
-     * */
-    public QuickAPI controllerHandlerMapping(ControllerHandlerMapping controllerHandlerMapping){
-        QuickAPIConfig.controllerHandlerMapping  = controllerHandlerMapping;
         return this;
     }
 
@@ -156,8 +150,49 @@ public class QuickAPI{
             }
         }
         try {
-            AbstractControllerHandler.handleApiControllerList();
-            AbstractEntityHandler.handleEntityMap();
+            //扫描包
+            Set<String> classNameSet = QuickAPIUtil.scanControllerPackage();
+            List<APIController> apiControllerList = new ArrayList<>(classNameSet.size());
+            //获取所有的Controller
+            for(Handler handler:handlers){
+                if(handler.exist()&&handler.isControllerEnvironment()){
+                    for(String className:classNameSet){
+                        try {
+                            Class clazz = ClassLoader.getSystemClassLoader().loadClass(className);
+                            APIController apiController = handler.getApiController(clazz);
+                            if(null!=apiController){
+                                apiControllerList.add(apiController);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            //处理所有非控制器环境
+            for(Handler handler:handlers){
+                if(!handler.exist()){
+                    continue;
+                }
+                for(APIController apiController:apiControllerList){
+                    handler.handleController(apiController);
+                    if(null!=apiController.clazz.getAnnotation(Deprecated.class)){
+                        apiController.deprecated = true;
+                    }
+                    for(API api:apiController.apiList){
+                        handler.handleAPI(api);
+                        if(null!=api.method.getAnnotation(Deprecated.class)){
+                            api.deprecated = true;
+                        }
+                    }
+                }
+                for(APIEntity apiEntity:apiDocument.apiEntityMap.values()){
+                    handler.handleEntity(apiEntity);
+                }
+            }
+            apiDocument.apiControllerList = apiControllerList;
+            QuickAPIUtil.updateJavaDoc(classNameSet);
+
             //生成API接口信息
             {
                 //生成json数据

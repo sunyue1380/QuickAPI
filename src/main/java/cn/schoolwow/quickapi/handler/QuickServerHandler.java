@@ -1,14 +1,9 @@
-package cn.schoolwow.quickapi.handler.controller;
+package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIField;
-import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
-import cn.schoolwow.quickserver.request.RequestMeta;
-import cn.schoolwow.quickserver.response.ResponseMeta;
-import cn.schoolwow.quickserver.session.SessionMeta;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -17,64 +12,82 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QuickServerControllerHandler extends AbstractControllerHandler{
-    private static Class[] ignoreParameter = new Class[]{RequestMeta.class, ResponseMeta.class, SessionMeta.class};
+public class QuickServerHandler extends AbstractHandler{
 
     @Override
-    public boolean isValidController(Class clazz) {
-        //是否任一方法存在RequestMapping注解
-        for(Method method: clazz.getDeclaredMethods()){
-            if(null!=method.getDeclaredAnnotation(RequestMapping.class)){
-                return true;
-            }
+    public boolean exist() {
+        try {
+            ClassLoader.getSystemClassLoader().loadClass("cn.schoolwow.quickserver.annotation.RequestMapping");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     @Override
-    public String getBaseUrl(Class clazz) {
-        String baseUrl = "";
+    public boolean isControllerEnvironment() {
+        return true;
+    }
+
+    @Override
+    public APIController getApiController(Class clazz) {
+        List<API> apiList = new ArrayList<>();
+        for(Method method: clazz.getDeclaredMethods()){
+            //判断MethodMapping
+            API api = handleRequestMapping(method);
+            if(null!=api){
+                api.method = method;
+                apiList.add(api);
+            }
+        }
+        if(apiList.isEmpty()){
+            return null;
+        }
+        APIController apiController = new APIController();
+        apiController.clazz = clazz;
+        apiController.className = clazz.getName();
+        apiController.name = clazz.getSimpleName();
+        apiController.apiList = apiList;
+        //是否有类上有RequestMapping注解
         RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
         if(classRequestMapping!=null){
-            baseUrl = classRequestMapping.value();
-        }
-        return baseUrl;
-    }
-
-    @Override
-    public void handleRequestMapping(Method method, API api) {
-        RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
-        if(methodRequestMapping==null){
-            return;
-        }
-        RequestMethod[] requestMethods = methodRequestMapping.method();
-        if(requestMethods.length>0){
-            api.methods = new String[requestMethods.length];
-            for(int i=0;i<requestMethods.length;i++){
-                api.methods[i] = requestMethods[i].name().toUpperCase();
+            String baseUrl = classRequestMapping.value();
+            if(baseUrl.charAt(0)!='/'){
+                baseUrl = "/"+baseUrl;
             }
-        }else{
-            api.methods = new String[]{"all"};
+            for(API api:apiController.apiList){
+                api.url = baseUrl + api.url;
+            }
         }
-        api.url = methodRequestMapping.value();
+        for(API api:apiController.apiList){
+            handleAPIParameter(api);
+            handleReturnValue(api);
+        }
+        return apiController;
     }
 
     @Override
-    public APIParameter[] handleParameter(Method method, API api) {
-        Parameter[] parameters = method.getParameters();
+    public void handleController(APIController apiController) {
+
+    }
+
+    @Override
+    public void handleAPI(API api) {
+
+    }
+
+    @Override
+    public void handleEntity(APIEntity apiEntity) {
+
+    }
+
+    private void handleAPIParameter(API api){
+        Parameter[] parameters = api.method.getParameters();
         List<APIParameter> apiParameterList = new ArrayList<>();
         List<String> parameterEntityNameList = new ArrayList<>();
         for(Parameter parameter:parameters){
             Class parameterType = parameter.getType();
-            //排除特定类型的参数
-            boolean ignore = false;
-            for(Class ignoreClass:ignoreParameter){
-                if(parameterType.getName().equals(ignoreClass.getName())){
-                    ignore = true;
-                    break;
-                }
-            }
-            if(ignore){
+            if(needIgnoreClass(parameterType.getName())){
                 continue;
             }
             //处理复杂对象
@@ -93,7 +106,6 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                         api.contentType = "multipart/form-data;";
                     }
                     apiParameterList.add(apiParameter);
-                    super.apiParameterList.add(apiParameter);
                 }
                 continue;
             }else{
@@ -108,6 +120,7 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
                 parameterEntityNameList.add(genericType.getTypeName());
             }
             APIParameter apiParameter = new APIParameter();
+            apiParameter.parameter = parameter;
             //RequestParam
             {
                 RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
@@ -179,6 +192,25 @@ public class QuickServerControllerHandler extends AbstractControllerHandler{
             apiParameter.type = parameter.getType().getName();
             apiParameterList.add(apiParameter);
         }
-        return apiParameterList.toArray(new APIParameter[0]);
+        api.apiParameters = apiParameterList.toArray(new APIParameter[0]);
+    }
+
+    private API handleRequestMapping(Method method){
+        RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
+        if(methodRequestMapping==null){
+            return null;
+        }
+        RequestMethod[] requestMethods = methodRequestMapping.method();
+        API api = new API();
+        if(requestMethods.length>0){
+            api.methods = new String[requestMethods.length];
+            for(int i=0;i<requestMethods.length;i++){
+                api.methods[i] = requestMethods[i].name().toUpperCase();
+            }
+        }else{
+            api.methods = new String[]{"all"};
+        }
+        api.url = methodRequestMapping.value();
+        return api;
     }
 }

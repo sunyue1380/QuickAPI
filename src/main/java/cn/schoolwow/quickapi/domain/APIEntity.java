@@ -15,4 +15,6 @@ public class APIEntity {
     public APIField[] apiFields;
     /**实体JSON字符串*/
     public String instance;
+    /**实体类*/
+    public transient Class clazz;
 }

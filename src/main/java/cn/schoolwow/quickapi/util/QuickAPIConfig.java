@@ -1,7 +1,6 @@
 package cn.schoolwow.quickapi.util;
 
 import cn.schoolwow.quickapi.domain.APIDocument;
-import cn.schoolwow.quickapi.handler.controller.ControllerHandlerMapping;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -15,8 +14,6 @@ public class QuickAPIConfig {
     public static String jsonObject;
     /**指定Java源代码路径*/
     public static String sourcePath = System.getProperty("user.dir")+"/src/main/java";
-    /**制定控制器环境*/
-    public static ControllerHandlerMapping controllerHandlerMapping;
     /**控制器包名*/
     public static Set<String> controllerPackageNameList = new LinkedHashSet<>();
     /**控制器类*/

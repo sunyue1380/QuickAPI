@@ -1,5 +1,6 @@
 package cn.schoolwow.quickapi.domain;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class API {
@@ -17,14 +18,10 @@ public class API {
     public String author;
     /**日期*/
     public String since;
-    /**方法名*/
-    public String methodName;
     /**请求编码*/
     public String contentType = "application/x-www-form-urlencoded";
     /**请求参数*/
     public APIParameter[] apiParameters = new APIParameter[0];
-    /**实际参数个数(用于与JavaDoc匹配)*/
-    public volatile int actualParameterLength;
     /**返回值*/
     public String returnValue;
     /**请求参数实体类信息*/
@@ -33,6 +30,8 @@ public class API {
     public String[] returnEntityNameList = new String[0];
     /**抛出异常*/
     public APIException[] apiExceptions = new APIException[0];
+    /**方法*/
+    public transient Method method;
 
     @Override
     public boolean equals(Object o) {

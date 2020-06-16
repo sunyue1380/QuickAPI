@@ -1,5 +1,7 @@
 package cn.schoolwow.quickapi.domain;
 
+import java.lang.reflect.Parameter;
+
 /**请求参数*/
 public class APIParameter {
     /**参数名*/
@@ -16,6 +18,8 @@ public class APIParameter {
     public boolean required = true;
     /**默认值*/
     public String defaultValue = "";
+    /**参数*/
+    public transient Parameter parameter;
 
     @Override
     public boolean equals(Object o) {

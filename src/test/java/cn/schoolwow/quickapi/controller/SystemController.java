@@ -40,7 +40,7 @@ public class SystemController {
      * 忘记密码
      * @param user 用户
      * */
-    @PutMapping(value = "/updatePassword")
+    @PostMapping(value = "/updatePassword")
     public boolean updatePassword(
             @RequestBody User user
     ){

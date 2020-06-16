@@ -1,8 +1,9 @@
-package cn.schoolwow.quickapi.handler.controller;
+package cn.schoolwow.quickapi.handler;
 
 import cn.schoolwow.quickapi.domain.API;
+import cn.schoolwow.quickapi.domain.APIController;
+import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIParameter;
-import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,95 +16,95 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SpringMVCControllerHandler extends AbstractControllerHandler{
+public class SpringMVCHandler extends AbstractHandler{
     private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
-    private static Class[] mappingClasses = new Class[]{
-            GetMapping.class,PostMapping.class,PutMapping.class,DeleteMapping.class,PatchMapping.class
-    };
     /**需要忽略的注解*/
     private static Class[] ignoreAnnotationClasses = new Class[]{SessionAttribute.class};
+    /**映射注解*/
+    private static Class[] mappingClasses = new Class[]{
+            GetMapping.class, PostMapping.class, PutMapping.class,DeleteMapping.class,PatchMapping.class
+    };
+
 
     @Override
-    public boolean isValidController(Class clazz) {
-        //是否任一方法存在RequestMapping注解
-        for(Method method: clazz.getDeclaredMethods()){
-            if(null!=method.getDeclaredAnnotation(RequestMapping.class)){
-                return true;
-            }
-            for(Class _class:mappingClasses) {
-                Annotation annotation = method.getDeclaredAnnotation(_class);
-                if (annotation != null) {
-                    return true;
-                }
-            }
+    public boolean exist() {
+        try {
+            ClassLoader.getSystemClassLoader().loadClass("org.springframework.web.bind.annotation.RequestMapping");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
-        return false;
     }
 
     @Override
-    public String getBaseUrl(Class _class) {
-        String baseUrl = "";
-        RequestMapping classRequestMapping = (RequestMapping) _class.getDeclaredAnnotation(RequestMapping.class);
+    public boolean isControllerEnvironment() {
+        return true;
+    }
+
+    @Override
+    public APIController getApiController(Class clazz) {
+        List<API> apiList = new ArrayList<>();
+        for(Method method: clazz.getDeclaredMethods()){
+            //判断MethodMapping
+            API api = handleMethodMappingClass(method);
+            if(null==api){
+                api = handleRequestMapping(method);
+            }
+            if(null!=api){
+                api.method = method;
+                apiList.add(api);
+            }
+        }
+        if(apiList.isEmpty()){
+            return null;
+        }
+        APIController apiController = new APIController();
+        apiController.clazz = clazz;
+        apiController.className = clazz.getName();
+        apiController.name = clazz.getSimpleName();
+        apiController.apiList = apiList;
+        //是否有类上有RequestMapping注解
+        RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
         if(classRequestMapping!=null){
-            baseUrl = classRequestMapping.value()[0];
+            String baseUrl = classRequestMapping.value()[0];
             if(baseUrl.charAt(0)!='/'){
                 baseUrl = "/"+baseUrl;
             }
+            for(API api:apiController.apiList){
+                api.url = baseUrl + api.url;
+            }
         }
-        return baseUrl;
+        for(API api:apiController.apiList){
+            handleAPIParameter(api);
+            handleReturnValue(api);
+        }
+        return apiController;
     }
 
     @Override
-    public void handleRequestMapping(Method method, API api) {
-        for(Class _class:mappingClasses){
-            Annotation annotation = method.getDeclaredAnnotation(_class);
-            if(annotation==null){
-                continue;
-            }
-            String requestMethod = _class.getSimpleName().substring(0,_class.getSimpleName().lastIndexOf("Mapping")).toUpperCase();
-            api.methods = new String[]{requestMethod};
-            try {
-                String[] values = (String[]) _class.getDeclaredMethod("value").invoke(annotation);
-                api.url = values[0];
-                if(api.url.charAt(0)!='/'){
-                    api.url = "/" + api.url;
-                }
-            }catch (Exception e){
-                continue;
-            }
-            return;
-        }
-        RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
-        if(methodRequestMapping==null){
-            return;
-        }
-        RequestMethod[] requestMethods = methodRequestMapping.method();
-        if(requestMethods.length>0){
-            api.methods = new String[requestMethods.length];
-            for(int i=0;i<requestMethods.length;i++){
-                api.methods[i] = requestMethods[i].name().toUpperCase();
-            }
-        }else{
-            api.methods = new String[]{"all"};
-        }
-        api.url = methodRequestMapping.value()[0];
-        if(api.url.charAt(0)!='/'){
-            api.url = "/" + api.url;
-        }
+    public void handleController(APIController apiController) {
+
     }
 
     @Override
-    public APIParameter[] handleParameter(Method method, API api) {
-        Parameter[] parameters = method.getParameters();
-        String[] parameterNames = u.getParameterNames(method);
+    public void handleAPI(API api) {
+
+    }
+
+    @Override
+    public void handleEntity(APIEntity apiEntity) {
+
+    }
+
+    private void handleAPIParameter(API api){
+        Parameter[] parameters = api.method.getParameters();
+        String[] parameterNames = u.getParameterNames(api.method);
         List<APIParameter> apiParameterList = new ArrayList<>();
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
-            for(String ignorePackageName:QuickAPIConfig.ignorePackageNameList){
-                if(parameterType.getName().startsWith(ignorePackageName)){
-                    continue;
-                }
+            if(needIgnoreClass(parameterType.getName())){
+                continue;
             }
             for(Class clazz:ignoreAnnotationClasses){
                 if(null!=parameters[i].getAnnotation(clazz)){
@@ -118,7 +119,9 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
                 Type genericType = pType.getActualTypeArguments()[0];
                 parameterEntityNameList.addAll(getRecycleEntity(genericType.getTypeName()));
             }
+
             APIParameter apiParameter = new APIParameter();
+            apiParameter.parameter = parameters[i];
             //RequestParam
             {
                 RequestParam requestParam = parameters[i].getAnnotation(RequestParam.class);
@@ -196,6 +199,54 @@ public class SpringMVCControllerHandler extends AbstractControllerHandler{
             apiParameterList.add(apiParameter);
         }
         api.parameterEntityNameList = parameterEntityNameList.toArray(new String[0]);
-        return apiParameterList.toArray(new APIParameter[0]);
+        api.apiParameters = apiParameterList.toArray(new APIParameter[0]);
+    }
+
+    private API handleMethodMappingClass(Method method){
+        //判断是否有Mapping注解
+        for(Class mappingClass:mappingClasses) {
+            Annotation annotation = method.getDeclaredAnnotation(mappingClass);
+            if(annotation == null){
+                continue;
+            }
+            //存在mapping注解
+            String requestMethod = mappingClass.getSimpleName().substring(0,mappingClass.getSimpleName().lastIndexOf("Mapping")).toUpperCase();
+            API api = new API();
+            api.methods = new String[]{requestMethod};
+            try {
+                String[] values = (String[]) mappingClass.getDeclaredMethod("value").invoke(annotation);
+                api.url = values[0];
+                if (api.url.charAt(0) != '/') {
+                    api.url = "/" + api.url;
+                }
+            }catch (Exception e){
+                continue;
+            }
+            return api;
+        }
+        return null;
+    }
+
+    private API handleRequestMapping(Method method){
+        //判断RequestMapping
+        RequestMapping methodRequestMapping = method.getDeclaredAnnotation(RequestMapping.class);
+        if(null==methodRequestMapping){
+            return null;
+        }
+        API api = new API();
+        RequestMethod[] requestMethods = methodRequestMapping.method();
+        if(requestMethods.length>0){
+            api.methods = new String[requestMethods.length];
+            for(int i=0;i<requestMethods.length;i++){
+                api.methods[i] = requestMethods[i].name().toUpperCase();
+            }
+        }else{
+            api.methods = new String[]{"all"};
+        }
+        api.url = methodRequestMapping.value()[0];
+        if(api.url.charAt(0)!='/'){
+            api.url = "/" + api.url;
+        }
+        return api;
     }
 }

@@ -12,6 +12,8 @@ public class APIController {
     public String className;
     /**接口*/
     public List<API> apiList = new ArrayList<>();
+    /**控制器类*/
+    public transient Class clazz;
 
     @Override
     public boolean equals(Object o) {
