@@ -5,7 +5,7 @@ import java.lang.reflect.Parameter;
 /**请求参数*/
 public class APIParameter {
     /**参数名*/
-    public String name;
+    public String name = "";
     /**参数类型*/
     public String type;
     /**参数请求类型*/
@@ -13,7 +13,7 @@ public class APIParameter {
     /**参数位置(query,body)*/
     public String position = "body";
     /**描述*/
-    public String description;
+    public String description = "";
     /**是否必须*/
     public boolean required = true;
     /**默认值*/

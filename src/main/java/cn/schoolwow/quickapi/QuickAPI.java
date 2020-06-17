@@ -197,11 +197,11 @@ public class QuickAPI{
             {
                 //生成json数据
                 {
-                    File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.json");
+                    File file = new File(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.js");
                     compareJSON(file);
-                    String data = JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect);
+                    String data = "let apiDocument = "+JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect)+";";
                     generateFile(data,file);
-                    QuickAPIConfig.jsonObject = data;
+                    QuickAPIConfig.apiJs = data;
                     logger.info("[文档路径]{}",file.getAbsolutePath());
                 }
                 //生成swagger.json文件
@@ -288,7 +288,7 @@ public class QuickAPI{
      * @param proxy http代理
      * */
     public void upload(String host, Proxy proxy) {
-        if(QuickAPIConfig.jsonObject==null||QuickAPIConfig.jsonObject.isEmpty()){
+        if(QuickAPIConfig.apiJs ==null||QuickAPIConfig.apiJs.isEmpty()){
             throw new IllegalArgumentException("请先调用generate()方法!");
         }
         StringBuilder sb = new StringBuilder();
@@ -307,7 +307,7 @@ public class QuickAPI{
             httpURLConnection.setUseCaches(false);
             httpURLConnection.setDoInput(true);
             httpURLConnection.setDoOutput(true);
-            byte[] bytes = QuickAPIConfig.jsonObject.getBytes();
+            byte[] bytes = QuickAPIConfig.apiJs.getBytes();
             httpURLConnection.setFixedLengthStreamingMode(bytes.length);
             httpURLConnection.getOutputStream().write(bytes);
             httpURLConnection.getOutputStream().flush();
@@ -337,7 +337,7 @@ public class QuickAPI{
         }
     }
 
-    /**比较新老JSON文件,获取变更信息*/
+    /**比较新老JS文件,获取变更信息*/
     private void compareJSON(File file) throws FileNotFoundException {
         if(!file.exists()){
             return;
@@ -348,7 +348,8 @@ public class QuickAPI{
             builder.append(scanner.nextLine());
         }
         scanner.close();
-        APIDocument oldAPIDocument = JSON.parseObject(builder.toString()).toJavaObject(APIDocument.class);
+        String json = builder.substring(builder.indexOf("{"),builder.lastIndexOf("}")+1);
+        APIDocument oldAPIDocument = JSON.parseObject(json).toJavaObject(APIDocument.class);
         //比对API
         List<APIController> oldAPIControllerList = oldAPIDocument.apiControllerList;
         List<APIController> newAPIControllerList = apiDocument.apiControllerList;

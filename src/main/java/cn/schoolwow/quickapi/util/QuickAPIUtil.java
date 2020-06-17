@@ -124,15 +124,19 @@ public class QuickAPIUtil {
                             if(api.method.getParameterCount()!=methodDoc.parameters().length){
                                 continue;
                             }
-                            api.name = methodDoc.commentText().trim();
+                            if(api.name.isEmpty()){
+                                api.name = methodDoc.commentText().trim();
+                            }
                             if (api.name.isEmpty()) {
                                 api.name = methodDoc.name();
                             }
                             Tag[] apiNotes = methodDoc.tags("apiNote");
-                            if (null != apiNotes && apiNotes.length > 0) {
+                            if (null != apiNotes && apiNotes.length > 0&&api.name.isEmpty()) {
                                 api.name = apiNotes[0].text();
                             }
-                            api.description = methodDoc.commentText().trim();
+                            if(api.description.isEmpty()){
+                                api.description = methodDoc.commentText().trim();
+                            }
                             Tag[] authorTags = methodDoc.tags("author");
                             if (null != authorTags && authorTags.length > 0) {
                                 api.author = authorTags[0].text();
@@ -146,8 +150,12 @@ public class QuickAPIUtil {
                             for (APIParameter apiParameter : api.apiParameters) {
                                 for (ParamTag paramTag : paramTags) {
                                     if (apiParameter.name.equals(paramTag.parameterName())) {
-                                        apiParameter.name = paramTag.parameterName();
-                                        apiParameter.description = paramTag.parameterComment();
+                                        if(apiParameter.name.isEmpty()){
+                                            apiParameter.name = paramTag.parameterName();
+                                        }
+                                        if(apiParameter.description.isEmpty()){
+                                            apiParameter.description = paramTag.parameterComment();
+                                        }
                                         break;
                                     }
                                 }
@@ -175,7 +183,7 @@ public class QuickAPIUtil {
             for (APIEntity apiEntity : apiDocument.apiEntityMap.values()) {
                 for (ClassDoc classDoc : classDocs) {
                     if (apiEntity.className.equals(classDoc.qualifiedName())) {
-                        if (null==apiEntity.description) {
+                        if (apiEntity.description.isEmpty()) {
                             apiEntity.description = classDoc.commentText();
                         }
                         Tag[] authorTags = classDoc.tags("author");

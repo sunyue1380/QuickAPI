@@ -27,55 +27,45 @@ app.filter('trustAsHtml', function ($sce) {
         return $sce.trustAsHtml(value);
     };
 });
-app.directive('entityTable',function(){
-    return {
-        restrict: 'AE',
-        replace: true,
-        templateUrl:"directive/entityTable.html",
-        scope:{
-            "entity":"=entity"
-        },
-        link:function($scope,$elem,$attr){
+app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
+    $scope.offline = false;
+    //判断访问协议
+    if(location.protocol.indexOf("file:")>=0){
+        $scope.offline = true;
+    }
+    $scope.apiDocument = apiDocument;
+    //处理历史变更记录
+    for(let i=0;i<$scope.apiDocument.apiHistoryList.length;i++){
+        let addList = $scope.apiDocument.apiHistoryList[i].addList;
+        let modifyList = $scope.apiDocument.apiHistoryList[i].modifyList;
+        for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
+            let apiList = $scope.apiDocument.apiControllerList[i].apiList;
+            for(let j=0;j<apiList.length;j++){
+                let historyName =  $scope.apiDocument.apiControllerList[i].className+"#"+apiList[j].methods[0]+"_"+apiList[j].url;
+                for(let l=0;l<addList.length;l++){
+                    if(addList[l]===historyName){
+                        addList[l] = apiList[j];
+                    }
+                }
+                for(let l=0;l<modifyList.length;l++){
+                    if(modifyList[l]===historyName){
+                        modifyList[l] = apiList[j];
+                    }
+                }
+            }
+        }
+        //剔除已经不存在的接口
+        for(let l=0;l<addList.length;l++){
+            if(typeof(addList[l])=="string"){
+                addList = addList.splice(l,1);
+            }
+        }
+        for(let l=0;l<modifyList.length;l++){
+            if(typeof(modifyList[l])=="string"){
+                modifyList = modifyList.splice(l,1);
+            }
         }
     }
-});
-app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
-    $scope.apiDocument = null;
-    $http.get("api.json").then(function(response){
-        $scope.apiDocument = response.data;
-        //处理历史变更记录
-        for(let i=0;i<$scope.apiDocument.apiHistoryList.length;i++){
-            let addList = $scope.apiDocument.apiHistoryList[i].addList;
-            let modifyList = $scope.apiDocument.apiHistoryList[i].modifyList;
-            for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
-                let apiList = $scope.apiDocument.apiControllerList[i].apiList;
-                for(let j=0;j<apiList.length;j++){
-                    let historyName =  $scope.apiDocument.apiControllerList[i].className+"#"+apiList[j].methods[0]+"_"+apiList[j].url;
-                    for(let l=0;l<addList.length;l++){
-                        if(addList[l]===historyName){
-                            addList[l] = apiList[j];
-                        }
-                    }
-                    for(let l=0;l<modifyList.length;l++){
-                        if(modifyList[l]===historyName){
-                            modifyList[l] = apiList[j];
-                        }
-                    }
-                }
-            }
-            //剔除已经不存在的接口
-            for(let l=0;l<addList.length;l++){
-                if(typeof(addList[l])=="string"){
-                    addList = addList.splice(l,1);
-                }
-            }
-            for(let l=0;l<modifyList.length;l++){
-                if(typeof(modifyList[l])=="string"){
-                    modifyList = modifyList.splice(l,1);
-                }
-            }
-        }
-    });
 
     /**
      * 从本地存储中获取
@@ -109,7 +99,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.activeTabName = key;
         switch($scope.view){
             case "entity":{
-                $scope.currentEntity = val.entity;
+                $scope.entity = val.entity;
             };break;
             case "api":{
                 $scope.currentAPI = val.api;
@@ -205,7 +195,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     };
 
     //实体类显示
-    $scope.currentEntity = null;
     $scope.setCurrentEntity = function(entity){
         $scope.view = "entity";
         $scope.tabMap["/quickapi/entity/"+entity.className] = {
@@ -215,7 +204,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         };
         $scope.activeTabName = "/quickapi/entity/"+entity.className;
 
-        $scope.currentEntity = entity;
+        $scope.entity = entity;
         $location.hash("top");
         $anchorScroll();
     };
@@ -227,17 +216,23 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         if($scope.searchText===""){
             return true;
         }
+        if(apiController.name.indexOf($scope.searchText)>=0){
+            return true;
+        }
         let apiList = apiController.apiList;
         for(let i=0;i<apiList.length;i++){
-            if($scope.showApi(apiList[i])){
+            if($scope.showApi(apiController,apiList[i])){
                 return true;
             }
         }
         return false;
     };
     //过滤API
-    $scope.showApi = function(api){
+    $scope.showApi = function(apiController,api){
         if($scope.searchText===""){
+            return true;
+        }
+        if(apiController.name.indexOf($scope.searchText)>=0){
             return true;
         }
         if(api.name.indexOf($scope.searchText)>=0||api.url.indexOf($scope.searchText)>=0){

@@ -2,6 +2,7 @@ package cn.schoolwow.quickapi.handler;
 
 import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
+import cn.schoolwow.quickbeans.annotation.Component;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
 
@@ -31,6 +32,9 @@ public class QuickServerHandler extends AbstractHandler{
 
     @Override
     public APIController getApiController(Class clazz) {
+        if(null==clazz.getAnnotation(Component.class)){
+            return null;
+        }
         List<API> apiList = new ArrayList<>();
         for(Method method: clazz.getDeclaredMethods()){
             //判断MethodMapping

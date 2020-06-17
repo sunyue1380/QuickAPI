@@ -6,7 +6,7 @@ public class APIEntity {
     /**实体类名*/
     public String className;
     /**描述*/
-    public String description;
+    public String description = "";
     /**作者*/
     public String author;
     /**日期*/

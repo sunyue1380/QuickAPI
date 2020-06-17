@@ -63,7 +63,7 @@
                 </a>
                     <ul>
                         <li ng-repeat="api in apiController.apiList">
-                            <a ng-class="{'is-active':activeTabName==api.url+api.methods[0]}" ng-click="setCurrentAPI(api);" ng-show="showApi(api);">
+                            <a ng-class="{'is-active':activeTabName==api.url+api.methods[0]}" ng-click="setCurrentAPI(api);" ng-show="showApi(apiController,api);">
                                 <s ng-show="api.deprecated">{{api.name}}</s>
                                 <span ng-show="!api.deprecated">{{api.name}}</span>
                             </a>
@@ -74,6 +74,10 @@
         </aside>
     </div>
     <div class="column is-10">
+        <div class="notification is-info" ng-show="offline">
+            <button class="delete" onclick="this.parentNode.parentNode.removeChild(this.parentNode);"></button>
+            您正在以文件模式访问文档,文件模式访问将无法执行ajax请求!若希望调试接口,请放在Web服务器下访问!
+        </div>
         <div class="tabs is-boxed is-large">
             <ul>
                 <li ng-repeat="(key,val) in tabMap" ng-class="{'is-active':activeTabName==key}" ng-click="changeToTab(key);"><a>{{val.name}}<button class="delete is-small " ng-click="closeTab(key);"></button></a></li>
@@ -242,7 +246,7 @@
             </section>
         </div>
         <div ng-show="view=='entity'">
-            <entity-table entity="currentEntity"></entity-table>
+            <div ng-include src="'/entityTable.html'"></div>
         </div>
         <div ng-show="view=='api'">
             <h1 class="title">{{currentAPI.name}}</h1>
@@ -310,7 +314,7 @@
                     </table>
                 </div>
                 <div class="column is-12" ng-show="currentAPI.parameterEntityNameList.length>0">
-                    <entity-table entity="apiDocument.apiEntityMap[parameterEntityName]" ng-repeat="parameterEntityName in currentAPI.parameterEntityNameList"></entity-table>
+                    <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[parameterEntityName]" ng-repeat="parameterEntityName in currentAPI.parameterEntityNameList"></div>
                 </div>
                 <div class="column is-12" ng-show="currentAPI.apiExceptions.length>0">
                     <h1 class="title">异常信息</h1>
@@ -334,7 +338,7 @@
                     <span class="tag is-info is-large">{{currentAPI.returnValue}}</span>
                 </div>
                 <div class="column is-12">
-                    <button class="button is-primary" ng-class="{'is-loading':isLoading}" ng-click="execute();">执行请求</button>
+                    <button class="button is-primary" ng-class="{'is-loading':isLoading}" ng-click="execute();" ng-disabled="offline">执行请求</button>
                 </div>
                 <div class="column is-12" ng-show="null!=response">
                     <h1 class="title">头部信息</h1>
@@ -357,12 +361,42 @@
                     <pre>{{responseJSON}}</pre>
                     <h1 class="title" ng-show="currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
                     <entity-table entity="apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></entity-table>
+                    <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <script src="js/angular.min.js"></script>
+<script src="api.js"></script>
 <script src="index.js"></script>
+<script type="text/ng-template" id="/entityTable.html">
+    <div class="columns">
+        <div class="column is-12">
+            <h1 class="title">{{entity.simpleName}}{{entity.description==null||entity.description==''?'':'('+entity.description+')' | trustAsHtml}}</h1>
+            <table class="table is-fullwidth is-large">
+                <thead>
+                <tr>
+                    <th>字段名</th>
+                    <th>字段类型</th>
+                    <th>描述</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><b>{{entity.simpleName}}</b></td>
+                    <td><b>{{entity.className}}</b></td>
+                    <td><b>{{entity.description}}</b></td>
+                </tr>
+                <tr ng-repeat="apiField in entity.apiFields">
+                    <td ng-bind="'&nbsp;&nbsp;'+apiField.name"></td>
+                    <td ng-bind="apiField.className"></td>
+                    <td ng-bind="apiField.description"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
 </body>
 </html>

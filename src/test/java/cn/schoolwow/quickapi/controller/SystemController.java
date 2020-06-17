@@ -1,5 +1,7 @@
 package cn.schoolwow.quickapi.controller;
 
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -59,12 +61,10 @@ public class SystemController {
         return true;
     }
 
-    /**
-     * 更新用户扩展信息
-     * @param userExtend 用户扩展信息
-     * */
+    @ApiOperation(value = "更新用户扩展信息",notes = "更新用户扩展信息")
     @PutMapping(value = "/updatePassword")
     public Object updateUserExtend(
+            @ApiParam(name = "body",value = "用户扩展信息",required = true)
             @RequestBody UserExtend userExtend
     ){
         return true;

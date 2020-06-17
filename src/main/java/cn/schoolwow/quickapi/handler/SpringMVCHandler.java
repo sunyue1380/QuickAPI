@@ -5,6 +5,8 @@ import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIParameter;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,6 +45,14 @@ public class SpringMVCHandler extends AbstractHandler{
 
     @Override
     public APIController getApiController(Class clazz) {
+        //class必须要RestController或者Controller或者Component注解
+        if(null==clazz.getAnnotation(Component.class)
+                &&null==clazz.getAnnotation(Controller.class)
+                &&null==clazz.getAnnotation(RestController.class)
+        ){
+            return null;
+        }
+
         List<API> apiList = new ArrayList<>();
         for(Method method: clazz.getDeclaredMethods()){
             //判断MethodMapping

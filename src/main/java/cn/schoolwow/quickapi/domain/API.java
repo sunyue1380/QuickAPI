@@ -11,9 +11,9 @@ public class API {
     /**请求地址*/
     public String url;
     /**名称*/
-    public String name;
+    public String name = "";
     /**描述*/
-    public String description;
+    public String description = "";
     /**作者*/
     public String author;
     /**日期*/

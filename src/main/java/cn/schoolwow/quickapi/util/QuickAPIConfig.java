@@ -10,8 +10,8 @@ public class QuickAPIConfig {
     public static String url = "/quickapi";
     /**指定生成路径*/
     public static String directory = "./src/main/resources";
-    /**json对象*/
-    public static String jsonObject;
+    /**api文件*/
+    public static String apiJs;
     /**指定Java源代码路径*/
     public static String sourcePath = System.getProperty("user.dir")+"/src/main/java";
     /**控制器包名*/
