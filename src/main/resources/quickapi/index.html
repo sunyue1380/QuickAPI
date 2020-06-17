@@ -53,7 +53,7 @@
                 接口列表
             </p>
             <ul class="menu-list">
-                <li ng-repeat="apiController in apiDocument.apiControllerList" ng-show="showApiController(apiController);"><a>
+                <li ng-repeat="apiController in apiDocument.apiControllerList" ng-show="showApiController(apiController);" title="{{apiController.className}}"><a>
                     <s ng-show="apiController.deprecated">{{apiController.name}}
                         <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
                     </s>

@@ -24,6 +24,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
+import static cn.schoolwow.quickapi.util.QuickAPIConfig.urlClassLoader;
 
 public class QuickAPI{
     private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
@@ -109,7 +110,38 @@ public class QuickAPI{
      * @param sourcePath 指定java源代码所在目录
      * */
     public QuickAPI sourcePath(String sourcePath){
-        QuickAPIConfig.sourcePath = sourcePath;
+        //判断文件目录是否存在
+        if(Files.notExists(Paths.get(sourcePath))){
+            logger.warn("[源文件路径不存在]路径:{}",sourcePath);
+            return this;
+        }
+        QuickAPIConfig.sourcePathBuilder.append(sourcePath+";");
+        return this;
+    }
+
+    /**
+     * Java类路径
+     * @param classPathURL 指定java类文件
+     * */
+    public QuickAPI classPath(URL classPathURL){
+        QuickAPIConfig.classPathList.add(classPathURL);
+        return this;
+    }
+
+    /**
+     * 指定类库位置
+     * @param libDirectory lib库位置
+     * */
+    public QuickAPI lib(String libDirectory) throws IOException {
+        Files.walkFileTree(Paths.get(libDirectory), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if(file.toFile().getName().endsWith(".jar")){
+                    classPath(file.toUri().toURL());
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
         return this;
     }
 
@@ -142,14 +174,9 @@ public class QuickAPI{
 
     /**生成接口文档*/
     public QuickAPI generate(){
-        //检测Java
-        {
-            File file = new File(QuickAPIConfig.sourcePath);
-            if(!file.exists()){
-                logger.warn("[源路径不存在]JavaDoc无法提取!请配置正确的源路径地址!当前源路径:{}",QuickAPIConfig.sourcePath);
-            }
-        }
         try {
+            QuickAPIUtil.initClassPath();
+
             //扫描包
             Set<String> classNameSet = QuickAPIUtil.scanControllerPackage();
             List<APIController> apiControllerList = new ArrayList<>(classNameSet.size());
@@ -158,7 +185,7 @@ public class QuickAPI{
                 if(handler.exist()&&handler.isControllerEnvironment()){
                     for(String className:classNameSet){
                         try {
-                            Class clazz = ClassLoader.getSystemClassLoader().loadClass(className);
+                            Class clazz = urlClassLoader.loadClass(className);
                             APIController apiController = handler.getApiController(clazz);
                             if(null!=apiController){
                                 apiControllerList.add(apiController);
@@ -213,7 +240,7 @@ public class QuickAPI{
             }
             //复制静态资源文件
             {
-                URL url = ClassLoader.getSystemResource("quickapi");
+                URL url = QuickAPIConfig.urlClassLoader.getSystemResource("quickapi");
                 switch(url.getProtocol()){
                     case "file":{
                         Path target = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url);
@@ -236,6 +263,9 @@ public class QuickAPI{
                             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                     throws IOException
                             {
+                                if(file.toFile().getName().endsWith("api.js")){
+                                    return FileVisitResult.CONTINUE;
+                                }
                                 Files.copy(file, target.resolve(file.subpath(sourceNameCount, file.getNameCount())),
                                         StandardCopyOption.REPLACE_EXISTING);
                                 return FileVisitResult.CONTINUE;
@@ -254,6 +284,9 @@ public class QuickAPI{
                                     jarEntry.getName().endsWith(".js")||
                                     jarEntry.getName().endsWith(".woff2")
                             ){
+                                if(jarEntry.getName().endsWith("api.js")){
+                                    continue;
+                                }
                                 InputStream inputStream = jarFile.getInputStream(jarEntry);
                                 String name = jarEntry.getName();
                                 name = name.substring(name.indexOf("/"));

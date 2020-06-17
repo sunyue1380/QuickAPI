@@ -4,6 +4,7 @@ import cn.schoolwow.quickapi.domain.API;
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIField;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickdao.annotation.Comment;
 import cn.schoolwow.quickdao.annotation.Constraint;
 import cn.schoolwow.quickdao.annotation.Ignore;
@@ -13,7 +14,7 @@ public class QuickDAOHandler extends AbstractHandler{
     @Override
     public boolean exist() {
         try {
-            ClassLoader.getSystemClassLoader().loadClass("cn.schoolwow.quickdao.dao.DAO");
+            QuickAPIConfig.urlClassLoader.loadClass("cn.schoolwow.quickdao.dao.DAO");
             return true;
         } catch (ClassNotFoundException e) {
             return false;

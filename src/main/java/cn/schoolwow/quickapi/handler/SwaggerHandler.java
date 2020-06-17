@@ -1,6 +1,7 @@
 package cn.schoolwow.quickapi.handler;
 
 import cn.schoolwow.quickapi.domain.*;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import io.swagger.annotations.*;
 
 public class SwaggerHandler extends AbstractHandler{
@@ -8,7 +9,7 @@ public class SwaggerHandler extends AbstractHandler{
     @Override
     public boolean exist() {
         try {
-            ClassLoader.getSystemClassLoader().loadClass("io.swagger.annotations.ApiModel");
+            QuickAPIConfig.urlClassLoader.loadClass("io.swagger.annotations.ApiModel");
             return true;
         } catch (ClassNotFoundException e) {
             return false;

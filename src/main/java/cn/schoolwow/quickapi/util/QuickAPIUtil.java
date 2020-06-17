@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,9 +22,22 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
+import static cn.schoolwow.quickapi.util.QuickAPIConfig.urlClassLoader;
 
 public class QuickAPIUtil {
     private static Logger logger = LoggerFactory.getLogger(QuickAPIUtil.class);
+    /**初始化类路径*/
+    public static void initClassPath(){
+        QuickAPIConfig.classPathList.addAll(Arrays.asList(((URLClassLoader) ClassLoader.getSystemClassLoader()).getURLs()));
+        StringBuilder builder = new StringBuilder();
+        urlClassLoader = new URLClassLoader(QuickAPIConfig.classPathList.toArray(new URL[0]));
+        URL[] urls = urlClassLoader.getURLs();
+        for(URL url:urls){
+            builder.append(url.getPath().substring(1)+";");
+        }
+        JavaDocReader.classPath = builder.toString();
+    }
+
     /**
      * 扫描控制器包
      * */
@@ -32,17 +46,17 @@ public class QuickAPIUtil {
         for(String packageName:QuickAPIConfig.controllerPackageNameList.toArray(new String[0])){
             String packageNamePath = packageName.replace(".", "/");
             try {
-                Enumeration<URL> urlEnumeration = Thread.currentThread().getContextClassLoader().getResources(packageNamePath);
+                Enumeration<URL> urlEnumeration = urlClassLoader.getResources(packageNamePath);
                 while(urlEnumeration.hasMoreElements()){
                     URL url = urlEnumeration.nextElement();
                     if(url==null){
                         continue;
                     }
+                    logger.info("[类文件路径]包路径:{},URL:{}", packageNamePath,url.toString());
                     switch (url.getProtocol()) {
                         case "file": {
                             File file = new File(url.getFile());
                             //TODO 对于有空格或者中文路径会无法识别
-                            logger.info("[类文件路径]{}", file.getAbsolutePath());
                             if (!file.isDirectory()) {
                                 throw new IllegalArgumentException("包名不是合法的文件夹!" + url.getFile());
                             }

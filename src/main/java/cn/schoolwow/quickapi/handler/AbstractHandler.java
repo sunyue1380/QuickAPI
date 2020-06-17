@@ -66,7 +66,7 @@ public abstract class AbstractHandler implements Handler {
         while (!apiEntityStack.isEmpty()) {
             Class clazz = null;
             try {
-                clazz = ClassLoader.getSystemClassLoader().loadClass(apiEntityStack.pop());
+                clazz = QuickAPIConfig.urlClassLoader.loadClass(apiEntityStack.pop());
             } catch (ClassNotFoundException e) {
                 logger.warn("[加载类不存在]类名:{}", className);
                 continue;

@@ -4,6 +4,7 @@ import cn.schoolwow.quickapi.domain.API;
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIEntity;
 import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
@@ -31,7 +32,7 @@ public class SpringMVCHandler extends AbstractHandler{
     @Override
     public boolean exist() {
         try {
-            ClassLoader.getSystemClassLoader().loadClass("org.springframework.web.bind.annotation.RequestMapping");
+            QuickAPIConfig.urlClassLoader.loadClass("org.springframework.web.bind.annotation.RequestMapping");
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -76,7 +77,12 @@ public class SpringMVCHandler extends AbstractHandler{
         //是否有类上有RequestMapping注解
         RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
         if(classRequestMapping!=null){
-            String baseUrl = classRequestMapping.value()[0];
+            String baseUrl = "";
+            if(classRequestMapping.value().length>0){
+                baseUrl = classRequestMapping.value()[0];
+            }else{
+                baseUrl = clazz.getSimpleName().toLowerCase();
+            }
             if(baseUrl.charAt(0)!='/'){
                 baseUrl = "/"+baseUrl;
             }
@@ -113,7 +119,7 @@ public class SpringMVCHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
-            if(needIgnoreClass(parameterType.getName())){
+            if(parameterType.getName().startsWith("org.springframework")){
                 continue;
             }
             for(Class clazz:ignoreAnnotationClasses){
@@ -253,7 +259,12 @@ public class SpringMVCHandler extends AbstractHandler{
         }else{
             api.methods = new String[]{"all"};
         }
-        api.url = methodRequestMapping.value()[0];
+        if(methodRequestMapping.value().length>0){
+            api.url = methodRequestMapping.value()[0];
+        }else{
+            api.url = method.getName();
+        }
+
         if(api.url.charAt(0)!='/'){
             api.url = "/" + api.url;
         }

@@ -100,9 +100,11 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         switch($scope.view){
             case "entity":{
                 $scope.entity = val.entity;
+                $scope.setCurrentEntity($scope.entity);
             };break;
             case "api":{
                 $scope.currentAPI = val.api;
+                $scope.setCurrentAPI($scope.currentAPI);
             };break;
         }
     };

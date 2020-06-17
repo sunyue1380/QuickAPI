@@ -18,7 +18,7 @@ public class QuickServerHandler extends AbstractHandler{
     @Override
     public boolean exist() {
         try {
-            ClassLoader.getSystemClassLoader().loadClass("cn.schoolwow.quickserver.annotation.RequestMapping");
+            QuickAPIConfig.urlClassLoader.loadClass("cn.schoolwow.quickserver.annotation.RequestMapping");
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -91,7 +91,7 @@ public class QuickServerHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(Parameter parameter:parameters){
             Class parameterType = parameter.getType();
-            if(needIgnoreClass(parameterType.getName())){
+            if(parameterType.getName().startsWith("cn.schoolwow.quickserver")){
                 continue;
             }
             //处理复杂对象
