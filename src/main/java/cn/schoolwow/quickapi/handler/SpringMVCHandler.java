@@ -119,7 +119,7 @@ public class SpringMVCHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
-            if(parameterType.getName().startsWith("org.springframework")){
+            if(!parameterType.getName().equals(MultipartFile.class.getName())&&parameterType.getName().startsWith("org.springframework")){
                 continue;
             }
             for(Class clazz:ignoreAnnotationClasses){
@@ -173,12 +173,12 @@ public class SpringMVCHandler extends AbstractHandler{
             //RequestPart
             {
                 RequestPart requestPart = parameters[i].getAnnotation(RequestPart.class);
-                if(requestPart!=null||parameterType.getName().equals(MultipartFile.class.getName())){
+                if(requestPart!=null){
                     if(null!=requestPart){
                         apiParameter.name = requestPart.value().isEmpty()?requestPart.name():requestPart.value();
                         apiParameter.required = requestPart.required();
                     }else{
-                        apiParameter.name = parameters[i].getName();
+                        apiParameter.name = parameterNames[i];
                         apiParameter.required = true;
                     }
                     apiParameter.requestType = "file";
@@ -207,6 +207,10 @@ public class SpringMVCHandler extends AbstractHandler{
                     apiParameter.required = pathVariable.required();
                     apiParameter.position = "query";
                 }
+            }
+            if(parameterType.getName().equals(MultipartFile.class.getName())){
+                apiParameter.requestType = "file";
+                api.contentType = "multipart/form-data;";
             }
             if(apiParameter.name==null||apiParameter.name.isEmpty()){
                 apiParameter.name = parameterNames[i];

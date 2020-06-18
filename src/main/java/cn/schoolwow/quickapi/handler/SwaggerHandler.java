@@ -45,7 +45,9 @@ public class SwaggerHandler extends AbstractHandler{
             for(APIParameter apiParameter:api.apiParameters){
                 ApiParam apiParam = apiParameter.parameter.getAnnotation(ApiParam.class);
                 if(null!=apiParam){
-                    apiParameter.name = apiParam.name();
+                    if(apiParameter.name.isEmpty()){
+                        apiParameter.name = apiParam.name();
+                    }
                     apiParameter.description = apiParam.value();
                     apiParameter.required = apiParam.required();
                     apiParameter.defaultValue = apiParam.defaultValue();
