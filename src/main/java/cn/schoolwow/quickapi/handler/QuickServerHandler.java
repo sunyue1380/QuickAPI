@@ -50,7 +50,7 @@ public class QuickServerHandler extends AbstractHandler{
         APIController apiController = new APIController();
         apiController.clazz = clazz;
         apiController.className = clazz.getName();
-        apiController.name = clazz.getSimpleName();
+        apiController.setName(clazz.getSimpleName());
         apiController.apiList = apiList;
         //是否有类上有RequestMapping注解
         RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
@@ -91,7 +91,7 @@ public class QuickServerHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(Parameter parameter:parameters){
             Class parameterType = parameter.getType();
-            if(parameterType.getName().startsWith("cn.schoolwow.quickserver")){
+            if(!parameterType.getName().equals(MultipartFile.class.getName())&&parameterType.getName().startsWith("cn.schoolwow.quickserver")){
                 continue;
             }
             //处理复杂对象
@@ -101,8 +101,8 @@ public class QuickServerHandler extends AbstractHandler{
                         continue;
                     }
                     APIParameter apiParameter = new APIParameter();
-                    apiParameter.name = apiField.name;
-                    apiParameter.description = apiField.description;
+                    apiParameter.setName(apiField.name);
+                    apiParameter.setDescription(apiField.getDescription());
                     apiParameter.required = false;
                     apiParameter.type = apiField.className;
                     if(apiParameter.type.equals(MultipartFile.class.getName())){
@@ -129,10 +129,7 @@ public class QuickServerHandler extends AbstractHandler{
             {
                 RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
                 if(requestParam!=null){
-                    apiParameter.name = requestParam.name();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = requestParam.name();
-                    }
+                    apiParameter.setName(requestParam.name());
                     apiParameter.required = requestParam.required();
                     apiParameter.defaultValue = requestParam.defaultValue();
                     //存在post,put或者patch方法为body,否则为query
@@ -159,10 +156,7 @@ public class QuickServerHandler extends AbstractHandler{
             {
                 RequestPart requestPart = parameter.getAnnotation(RequestPart.class);
                 if(requestPart!=null||parameterType.getName().equals(MultipartFile.class.getName())){
-                    apiParameter.name = requestPart.name();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = requestPart.name();
-                    }
+                    apiParameter.setName(requestPart.name());
                     apiParameter.required = requestPart.required();
                     apiParameter.requestType = "file";
                     api.contentType = "multipart/form-data;";
@@ -172,7 +166,7 @@ public class QuickServerHandler extends AbstractHandler{
             {
                 RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
                 if(requestBody!=null){
-                    apiParameter.name = "requestBody";
+                    apiParameter.setName("requestBody");
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json; charset=utf-8";
@@ -182,15 +176,17 @@ public class QuickServerHandler extends AbstractHandler{
             {
                 PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
                 if(pathVariable!=null){
-                    apiParameter.name = pathVariable.name();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = pathVariable.name();
-                    }
+                    apiParameter.setName(pathVariable.name());
                     apiParameter.required = pathVariable.required();
                     apiParameter.position = "path";
                 }
             }
-            if(apiParameter.name==null||apiParameter.name.isEmpty()){
+            if(parameterType.getName().equals(org.springframework.web.multipart.MultipartFile.class.getName())){
+                apiParameter.setName(parameter.getName());
+                apiParameter.requestType = "file";
+                api.contentType = "multipart/form-data;";
+            }
+            if(null==apiParameter.getName()||apiParameter.getName().isEmpty()){
                 continue;
             }
             apiParameter.type = parameter.getType().getName();

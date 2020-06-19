@@ -393,7 +393,7 @@ public class QuickAPI{
                 List<API> newAPIList = newAPIController.apiList;
                 for(API api:newAPIList){
                     apiHistory.addList.add(newAPIController.className+"#"+api.methods[0]+"_"+api.url);
-                    logger.info("[新增接口]{} {} {}",api.name,api.methods[0],api.url);
+                    logger.info("[新增接口]{} {} {}",api.getName(),api.methods[0],api.url);
                 }
                 continue;
             }
@@ -405,14 +405,14 @@ public class QuickAPI{
                         //判断是否新增
                         if(!oldAPIList.contains(newAPI)){
                             apiHistory.addList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
-                            logger.info("[新增接口]{} {} {}",newAPI.name,newAPI.methods[0],newAPI.url);
+                            logger.info("[新增接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                             continue;
                         }
                         //判断是否变更
                         for(API oldAPI:oldAPIList){
                             if(newAPI.equals(oldAPI)&&!Arrays.equals(newAPI.apiParameters,oldAPI.apiParameters)){
                                 apiHistory.modifyList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
-                                logger.info("[变更接口]{} {} {}",newAPI.name,newAPI.methods[0],newAPI.url);
+                                logger.info("[变更接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                                 break;
                             }
                         }
@@ -427,7 +427,7 @@ public class QuickAPI{
                 List<API> apiList = oldAPIController.apiList;
                 for(API api:apiList){
                     apiHistory.deleteList.add(api);
-                    logger.info("[删除接口]{} {} {}",api.name,api.methods[0],api.url);
+                    logger.info("[删除接口]{} {} {}",api.getName(),api.methods[0],api.url);
                 }
                 continue;
             }
@@ -438,7 +438,7 @@ public class QuickAPI{
                     for(API oldAPI:oldAPIList){
                         if(!newAPIList.contains(oldAPI)){
                             apiHistory.deleteList.add(oldAPI);
-                            logger.info("[删除接口]{} {} {}",oldAPI.name,oldAPI.methods[0],oldAPI.url);
+                            logger.info("[删除接口]{} {} {}",oldAPI.getName(),oldAPI.methods[0],oldAPI.url);
                         }
                     }
                     break;
@@ -460,7 +460,7 @@ public class QuickAPI{
         {
             JSONArray tagArray = new JSONArray();
             for(APIController apiController: apiDocument.apiControllerList){
-                tagArray.add(JSON.parseObject("{\"name\":\""+apiController.name+"\",\"description\":null}"));
+                tagArray.add(JSON.parseObject("{\"name\":\""+apiController.getName()+"\",\"description\":null}"));
             }
             o.put("tags",tagArray);
         }
@@ -471,21 +471,21 @@ public class QuickAPI{
             for(APIController apiController: apiDocument.apiControllerList){
                 for(API api:apiController.apiList){
                     JSONObject p = new JSONObject();
-                    p.put("tags",JSON.parseArray("[\""+apiController.name+"\"]"));
-                    p.put("summary",api.name);
-                    p.put("description",api.description);
+                    p.put("tags",JSON.parseArray("[\""+apiController.getName()+"\"]"));
+                    p.put("summary",api.getName());
+                    p.put("description",api.getDescription());
                     //添加参数
                     {
                         JSONArray parameters = new JSONArray();
                         for(APIParameter apiParameter:api.apiParameters){
                             JSONObject q = new JSONObject();
-                            q.put("name",apiParameter.name);
+                            q.put("name",apiParameter.getName());
                             q.put("in",apiParameter.position);
                             q.put("required",apiParameter.required);
-                            if(null==apiParameter.description){
+                            if(null==apiParameter.getDescription()){
                                 q.put("description","");
                             }else{
-                                q.put("description",apiParameter.description+("".equals(apiParameter.defaultValue)?"":",默认为"+apiParameter.defaultValue));
+                                q.put("description",apiParameter.getDescription()+("".equals(apiParameter.defaultValue)?"":",默认为"+apiParameter.defaultValue));
                             }
                             switch(apiParameter.requestType){
                                 case "text":{
@@ -502,7 +502,7 @@ public class QuickAPI{
                                         JSONObject fieldProperty = new JSONObject();
                                         if(null!=apiEntity.apiFields){
                                             for(APIField apiField:apiEntity.apiFields){
-                                                fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.description+"\"}"));
+                                                fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.getDescription()+"\"}"));
                                             }
                                         }
                                         schema.put("properties",fieldProperty);

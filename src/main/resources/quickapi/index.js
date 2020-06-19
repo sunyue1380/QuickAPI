@@ -275,17 +275,22 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $anchorScroll();
     };
 
-    $scope.request = {};
     $scope.response = null;
 
     //最近使用
     $scope.lastUsed  = $scope.getFromLocalStorage("lastUsed",[]);
     $scope.cleanHistory = function(){
-        if(confirm("确认清空历史记录吗?")){
+        if(confirm("确认清除历史记录吗?")){
             $scope.lastUsed  = [];
             $scope.saveToLocalStorage("lastUsed",$scope.lastUsed);
         }
     };
+    $scope.cleanParameter = function(){
+        if(confirm("确认清除请求参数缓存吗?")){
+            localStorage.clear();
+        }
+    }
+
     //执行请求
     $scope.execute = function(){
         //检查必填项

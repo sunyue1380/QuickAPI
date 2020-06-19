@@ -8,7 +8,7 @@ public class APIField {
     /**字段类型*/
     public String className;
     /**描述*/
-    public String description;
+    private String description;
     /**是否忽略*/
     public boolean ignore;
     /**是否必须*/
@@ -17,4 +17,14 @@ public class APIField {
     public String example;
     /**字段*/
     public transient Field field;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        if(null==this.description||this.description.isEmpty()){
+            this.description = description;
+        }
+    }
 }

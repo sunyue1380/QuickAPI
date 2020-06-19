@@ -123,10 +123,7 @@ public class QuickAPIUtil {
                     if (!apiController.className.equals(classDoc.qualifiedName())) {
                         continue;
                     }
-                    String name = classDoc.commentText().trim();
-                    if (!name.isEmpty()) {
-                        apiController.name = name;
-                    }
+                    apiController.setName(classDoc.commentText().trim());
                     //匹配方法
                     MethodDoc[] methodDocs = classDoc.methods();
                     for (API api : apiController.apiList) {
@@ -138,19 +135,13 @@ public class QuickAPIUtil {
                             if(api.method.getParameterCount()!=methodDoc.parameters().length){
                                 continue;
                             }
-                            if(api.name.isEmpty()){
-                                api.name = methodDoc.commentText().trim();
-                            }
-                            if (api.name.isEmpty()) {
-                                api.name = methodDoc.name();
-                            }
+                            api.setName(methodDoc.commentText().trim());
+                            api.setName(methodDoc.name());
                             Tag[] apiNotes = methodDoc.tags("apiNote");
-                            if (null != apiNotes && apiNotes.length > 0&&api.name.isEmpty()) {
-                                api.name = apiNotes[0].text();
+                            if (null != apiNotes && apiNotes.length > 0) {
+                                api.setName(apiNotes[0].text());
                             }
-                            if(api.description.isEmpty()){
-                                api.description = methodDoc.commentText().trim();
-                            }
+                            api.setDescription(methodDoc.commentText().trim());
                             Tag[] authorTags = methodDoc.tags("author");
                             if (null != authorTags && authorTags.length > 0) {
                                 api.author = authorTags[0].text();
@@ -163,13 +154,9 @@ public class QuickAPIUtil {
                             ParamTag[] paramTags = methodDoc.paramTags();
                             for (APIParameter apiParameter : api.apiParameters) {
                                 for (ParamTag paramTag : paramTags) {
-                                    if (apiParameter.name.equals(paramTag.parameterName())) {
-                                        if(apiParameter.name.isEmpty()){
-                                            apiParameter.name = paramTag.parameterName();
-                                        }
-                                        if(apiParameter.description.isEmpty()){
-                                            apiParameter.description = paramTag.parameterComment();
-                                        }
+                                    if (apiParameter.parameter.getName().equals(paramTag.parameterName())) {
+                                        apiParameter.setName(paramTag.parameterName());
+                                        apiParameter.setDescription(paramTag.parameterComment());
                                         break;
                                     }
                                 }
@@ -197,9 +184,7 @@ public class QuickAPIUtil {
             for (APIEntity apiEntity : apiDocument.apiEntityMap.values()) {
                 for (ClassDoc classDoc : classDocs) {
                     if (apiEntity.className.equals(classDoc.qualifiedName())) {
-                        if (apiEntity.description.isEmpty()) {
-                            apiEntity.description = classDoc.commentText();
-                        }
+                        apiEntity.setDescription(classDoc.commentText());
                         Tag[] authorTags = classDoc.tags("author");
                         if (null != authorTags && authorTags.length > 0) {
                             apiEntity.author = authorTags[0].text();
@@ -210,8 +195,8 @@ public class QuickAPIUtil {
                         }
                         for (APIField apiField : apiEntity.apiFields) {
                             for (FieldDoc fieldDoc : QuickAPIUtil.getAllFieldDoc(classDoc)) {
-                                if (apiField.name.equals(fieldDoc.name()) && apiField.description == null) {
-                                    apiField.description = fieldDoc.getRawCommentText();
+                                if (apiField.name.equals(fieldDoc.name())) {
+                                    apiField.setDescription(fieldDoc.getRawCommentText());
                                     break;
                                 }
                             }

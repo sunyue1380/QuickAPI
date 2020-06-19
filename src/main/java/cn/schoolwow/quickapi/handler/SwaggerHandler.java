@@ -32,23 +32,21 @@ public class SwaggerHandler extends AbstractHandler{
         {
             Api api = (Api) apiController.clazz.getAnnotation(API.class);
             if(null!=api){
-                apiController.name = api.tags()[0];
+                apiController.setName(api.tags()[0]);
             }
         }
         for(API api:apiController.apiList){
             ApiOperation apiOperation = api.method.getAnnotation(ApiOperation.class);
             if(null!=apiOperation){
-                api.name = apiOperation.value();
-                api.description = apiOperation.notes();
+                api.setName(apiOperation.value());
+                api.setDescription(apiOperation.notes());
             }
 
             for(APIParameter apiParameter:api.apiParameters){
                 ApiParam apiParam = apiParameter.parameter.getAnnotation(ApiParam.class);
                 if(null!=apiParam){
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = apiParam.name();
-                    }
-                    apiParameter.description = apiParam.value();
+                    apiParameter.setName(apiParam.name());
+                    apiParameter.setDescription(apiParam.value());
                     apiParameter.required = apiParam.required();
                     apiParameter.defaultValue = apiParam.defaultValue();
                 }
@@ -66,17 +64,15 @@ public class SwaggerHandler extends AbstractHandler{
         {
             ApiModel apiModel = (ApiModel) apiEntity.clazz.getAnnotation(ApiModel.class);
             if (null!=apiModel) {
-                apiEntity.description = apiModel.description();
-                if(null==apiEntity.description|| apiEntity.description.isEmpty()){
-                    apiEntity.description = apiModel.value();
-                }
+                apiEntity.setDescription(apiModel.description());
+                apiEntity.setDescription(apiModel.value());
             }
         }
         {
             for(APIField apiField:apiEntity.apiFields){
                 ApiModelProperty apiModelProperty = apiField.field.getAnnotation(ApiModelProperty.class);
                 if (null!=apiModelProperty) {
-                    apiField.description = apiModelProperty.value();
+                    apiField.setDescription(apiModelProperty.value());
                     apiField.required = apiModelProperty.required();
                     apiField.example = apiModelProperty.example();
                 }

@@ -72,7 +72,7 @@ public class SpringMVCHandler extends AbstractHandler{
         APIController apiController = new APIController();
         apiController.clazz = clazz;
         apiController.className = clazz.getName();
-        apiController.name = clazz.getSimpleName();
+        apiController.setName(clazz.getSimpleName());
         apiController.apiList = apiList;
         //是否有类上有RequestMapping注解
         RequestMapping classRequestMapping = (RequestMapping) clazz.getDeclaredAnnotation(RequestMapping.class);
@@ -142,10 +142,8 @@ public class SpringMVCHandler extends AbstractHandler{
             {
                 RequestParam requestParam = parameters[i].getAnnotation(RequestParam.class);
                 if(requestParam!=null){
-                    apiParameter.name = requestParam.value();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = requestParam.name();
-                    }
+                    apiParameter.setName(requestParam.value());
+                    apiParameter.setName(requestParam.name());
                     apiParameter.required = requestParam.required();
                     if(!requestParam.defaultValue().equals(ValueConstants.DEFAULT_NONE)){
                         apiParameter.defaultValue = requestParam.defaultValue();
@@ -175,10 +173,11 @@ public class SpringMVCHandler extends AbstractHandler{
                 RequestPart requestPart = parameters[i].getAnnotation(RequestPart.class);
                 if(requestPart!=null){
                     if(null!=requestPart){
-                        apiParameter.name = requestPart.value().isEmpty()?requestPart.name():requestPart.value();
+                        apiParameter.setName(requestPart.value());
+                        apiParameter.setName(requestPart.name());
                         apiParameter.required = requestPart.required();
                     }else{
-                        apiParameter.name = parameterNames[i];
+                        apiParameter.setName(parameterNames[i]);
                         apiParameter.required = true;
                     }
                     apiParameter.requestType = "file";
@@ -189,7 +188,7 @@ public class SpringMVCHandler extends AbstractHandler{
             {
                 RequestBody requestBody = parameters[i].getAnnotation(RequestBody.class);
                 if(requestBody!=null){
-                    apiParameter.name = "requestBody";
+                    apiParameter.setName("requestBody");
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json; charset=utf-8";
@@ -200,10 +199,8 @@ public class SpringMVCHandler extends AbstractHandler{
             {
                 PathVariable pathVariable = parameters[i].getAnnotation(PathVariable.class);
                 if(pathVariable!=null){
-                    apiParameter.name = pathVariable.value();
-                    if(apiParameter.name.isEmpty()){
-                        apiParameter.name = pathVariable.name();
-                    }
+                    apiParameter.setName(pathVariable.value());
+                    apiParameter.setName(pathVariable.name());
                     apiParameter.required = pathVariable.required();
                     apiParameter.position = "query";
                 }
@@ -212,8 +209,8 @@ public class SpringMVCHandler extends AbstractHandler{
                 apiParameter.requestType = "file";
                 api.contentType = "multipart/form-data;";
             }
-            if(apiParameter.name==null||apiParameter.name.isEmpty()){
-                apiParameter.name = parameterNames[i];
+            if(null==apiParameter.getName()||apiParameter.getName().isEmpty()){
+                apiParameter.setName(parameterNames[i]);
             }
             apiParameter.type = parameters[i].getType().getName();
             apiParameterList.add(apiParameter);

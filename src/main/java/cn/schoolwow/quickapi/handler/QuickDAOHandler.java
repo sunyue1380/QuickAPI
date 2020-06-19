@@ -46,14 +46,14 @@ public class QuickDAOHandler extends AbstractHandler{
         {
             Comment comment = (Comment) apiEntity.clazz.getAnnotation(Comment.class);
             if(null!=comment){
-                apiEntity.description = comment.value();
+                apiEntity.setDescription(comment.value());
             }
         }
         {
             for(APIField apiField:apiEntity.apiFields){
                 Comment comment = apiField.field.getAnnotation(Comment.class);
                 if (null!=comment) {
-                    apiField.description = comment.value();
+                    apiField.setDescription(comment.value());
                 }
                 if (null != apiField.field.getAnnotation(Ignore.class)) {
                     apiField.ignore = true;

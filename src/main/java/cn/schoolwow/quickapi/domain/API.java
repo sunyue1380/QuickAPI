@@ -11,9 +11,9 @@ public class API {
     /**请求地址*/
     public String url;
     /**名称*/
-    public String name = "";
+    private String name = "";
     /**描述*/
-    public String description = "";
+    private String description = "";
     /**作者*/
     public String author;
     /**日期*/
@@ -32,6 +32,26 @@ public class API {
     public APIException[] apiExceptions = new APIException[0];
     /**方法*/
     public transient Method method;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        if(null==this.name||this.name.isEmpty()){
+            this.name = name;
+        }
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        if(null==this.description||this.description.isEmpty()){
+            this.description = description;
+        }
+    }
 
     @Override
     public boolean equals(Object o) {
