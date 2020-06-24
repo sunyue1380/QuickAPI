@@ -291,6 +291,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     }
 
+    /**计算请求耗费时间*/
+    $scope.consumeTime = "";
     //执行请求
     $scope.execute = function(){
         //检查必填项
@@ -361,9 +363,26 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 }
                 operation.data = fd;
             }else if($scope.currentAPI.contentType.indexOf("application/json")>=0){
-                operation.data = $scope.request[$scope.currentAPI.apiParameters[0].name];
+                for(let i=0;i<$scope.currentAPI.apiParameters.length;i++){
+                    operation.data = $scope.request[$scope.currentAPI.apiParameters[i].name];
+                }
             }else{
-                operation.data = $httpParamSerializer($scope.request);
+                let request = angular.copy($scope.request);
+                let apiParameters = $scope.currentAPI.apiParameters;
+                operation.data = "";
+                //处理数组类型的参数
+                for(let i=0;i<apiParameters.length;i++){
+                    if(apiParameters[i].type.indexOf("[L")>=0||apiParameters[i].type.indexOf("<")>=0){
+                        if(request[apiParameters[i].name]){
+                            let values = request[apiParameters[i].name].split(",");
+                            for(let j=0;j<values.length;j++){
+                                operation.data += apiParameters[i].name + "=" + values[j]+"&";
+                            }
+                            delete request[apiParameters[i].name];
+                        }
+                    }
+                }
+                operation.data += $httpParamSerializer(request);
             }
         }else{
             operation.params = $scope.request;
@@ -376,6 +395,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             operation.headers[prop] = $rootScope.headers[prop];
         }
         $scope.loading = true;
+        let startTime = new Date().getTime();
         $http(operation).then(function(response){
             $scope.response = response;
             $scope.responseJSON = JSON.stringify(response.data,null,4);
@@ -383,6 +403,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             $scope.response = error;
             $scope.responseJSON = JSON.stringify(error.data,null,4);
         }).finally(function(){
+            let endTime = new Date().getTime();
+            $scope.consumeTime = (endTime-startTime)+"ms";
             $scope.loading = false;
             localStorage.setItem($scope.currentAPI.url,JSON.stringify($scope.request));
             if($scope.lastUsed.length>5){

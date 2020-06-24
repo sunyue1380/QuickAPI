@@ -1,6 +1,8 @@
 package cn.schoolwow.quickapi.util;
 
 import cn.schoolwow.quickapi.domain.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.sun.javadoc.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -39,11 +42,12 @@ public class QuickAPIUtil {
     }
 
     /**
-     * 扫描控制器包
+     * 扫描包
+     * @param packageNames 包名数组
      * */
-    public static Set<String> scanControllerPackage(){
+    public static Set<String> scanPackage(String... packageNames){
         Set<String> classNameSet = new HashSet<>();
-        for(String packageName:QuickAPIConfig.controllerPackageNameList.toArray(new String[0])){
+        for(String packageName:packageNames){
             String packageNamePath = packageName.replace(".", "/");
             try {
                 Enumeration<URL> urlEnumeration = urlClassLoader.getResources(packageNamePath);
@@ -110,6 +114,143 @@ public class QuickAPIUtil {
     }
 
     /**
+     * 扫描控制器包
+     * */
+    public static Set<String> scanControllerPackage(){
+        return scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
+    }
+
+    /**
+     * 是否需要过滤该类
+     * @param className 类名
+     * */
+    public static boolean needIgnoreClass(String className){
+        //排除基础类型
+        if(className.equals("boolean")
+                ||className.equals("char")
+                ||className.equals("short")
+                ||className.equals("int")
+                ||className.equals("long")
+                ||className.equals("float")
+                ||className.equals("double")
+        ){
+            return true;
+        }
+        for(String ignorePackageName: QuickAPIConfig.ignorePackageNameList){
+            if(className.startsWith(ignorePackageName)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 递归获取实体类所有依赖
+     * @param className 类名
+     * */
+    public static Set<String> getRecycleEntity(String className) {
+        Set<String> apiEntitySet = new LinkedHashSet<>();
+        if(QuickAPIUtil.needIgnoreClass(className)){
+            return apiEntitySet;
+        }
+        Stack<String> apiEntityStack = new Stack<>();
+        apiEntityStack.push(className);
+        while (!apiEntityStack.isEmpty()) {
+            Class clazz = null;
+            try {
+                clazz = QuickAPIConfig.urlClassLoader.loadClass(apiEntityStack.pop());
+            } catch (ClassNotFoundException e) {
+                logger.warn("[加载类不存在]类名:{}", className);
+                continue;
+            }
+            apiEntitySet.add(clazz.getName());
+            Map<String, APIEntity> apiEntityMap = QuickAPIConfig.apiDocument.apiEntityMap;
+            if (apiEntityMap.containsKey(clazz.getName())) {
+                continue;
+            }
+            APIEntity apiEntity = addAPIEntity(clazz);
+            apiEntityMap.put(clazz.getName(), apiEntity);
+            for (APIField apiField : apiEntity.apiFields) {
+                className = QuickAPIUtil.getEntityClassName(apiField.className);
+                if(QuickAPIUtil.needIgnoreClass(className)){
+                    continue;
+                }
+                if (!apiEntityMap.containsKey(className)) {
+                    apiEntityStack.push(className);
+                }
+            }
+        }
+        return apiEntitySet;
+    }
+
+    /**
+     * 获取实体类型类名
+     * @param className 类名
+     * */
+    public static String getEntityClassName(String className){
+        if(className.startsWith("[")){
+            switch(className){
+                case "[Z":{className = "boolean";}break;
+                case "[C":{className = "char";}break;
+                case "[S":{className = "short";}break;
+                case "[I":{className = "int";}break;
+                case "[J":{className = "long";}break;
+                case "[F":{className = "float";}break;
+                case "[D":{className = "double";}break;
+                default:{
+                    if(className.startsWith("[L")){
+                        className = className.substring(2, className.length() - 1);
+                    }
+                }break;
+            }
+        }else if (className.contains("<") && className.contains(">")) {
+            className = className.substring(className.indexOf("<") + 1, className.indexOf(">"));
+        }
+        return className;
+    }
+
+    /**
+     * 添加APIEntity
+     * @param clazz 类
+     * */
+    public static APIEntity addAPIEntity(Class clazz) {
+        APIEntity apiEntity = new APIEntity();
+        //处理类名
+        {
+            apiEntity.clazz = clazz;
+            apiEntity.className = clazz.getName();
+            apiEntity.simpleName = clazz.getSimpleName();
+        }
+        //处理Field
+        {
+            Field[] fields = QuickAPIUtil.getAllField(clazz);
+            APIField[] apiFields = new APIField[fields.length];
+            Field.setAccessible(fields, true);
+            for (int i = 0; i < fields.length; i++) {
+                APIField apiField = new APIField();
+                apiField.field = fields[i];
+                apiField.name = fields[i].getName();
+                apiField.className = fields[i].getType().getName();
+                //处理泛型
+                java.lang.reflect.Type type = fields[i].getGenericType();
+                if (type instanceof java.lang.reflect.ParameterizedType) {
+                    java.lang.reflect.ParameterizedType pType = (java.lang.reflect.ParameterizedType) type;
+                    Type genericType = pType.getActualTypeArguments()[0];
+                    apiField.className += "<" + genericType.getTypeName() + ">";
+                }
+                apiFields[i] = apiField;
+            }
+            apiEntity.apiFields = apiFields;
+        }
+        try {
+            apiEntity.instance = JSON.toJSONString(clazz.newInstance(), SerializerFeature.WriteMapNullValue);
+        } catch (Exception e) {
+            logger.warn("[实例化失败]原因:{},类名:{}",e.getMessage(),clazz.getName());
+        }
+        return apiEntity;
+    }
+
+    /**
      * 匹配JavaDoc注释
      * @param classNameSet 控制器类名集合
      * */
@@ -154,7 +295,7 @@ public class QuickAPIUtil {
                             ParamTag[] paramTags = methodDoc.paramTags();
                             for (APIParameter apiParameter : api.apiParameters) {
                                 for (ParamTag paramTag : paramTags) {
-                                    if (apiParameter.parameter.getName().equals(paramTag.parameterName())) {
+                                    if (null!=apiParameter.parameter&&apiParameter.getName().equals(paramTag.parameterName())) {
                                         apiParameter.setName(paramTag.parameterName());
                                         apiParameter.setDescription(paramTag.parameterComment());
                                         break;

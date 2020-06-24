@@ -40,6 +40,8 @@
                 <li>
                     <a ng-click="cleanHistory();">清除历史记录</a>
                 </li>
+            </ul>
+            <ul class="menu-list">
                 <li>
                     <a ng-click="cleanParameter();">清除参数缓存</a>
                 </li>
@@ -347,13 +349,10 @@
                     <h1 class="title">头部信息</h1>
                     <table class="table is-striped is-narrow is-hoverable is-fullwidth">
                         <tr>
-                            <td>
-                                <span class="tag is-success " ng-show="response.status<400||response.status>500">{{response.status}}</span>
-                                <span class="tag is-danger" ng-show="response.status>=400&&response.status<600">{{response.status}}</span>
-                            </td>
-                            <td>
-                                <p>{{response.statusText}}</p>
-                            </td>
+                            <td>耗时</td><td><span class="tag is-info">{{consumeTime}}</span></td>
+                        </tr>
+                        <tr>
+                            <td>返回头</td><td><span class="tag" ng-class="{'is-success':response.status<400||response.status>500,'is-danger':response.status>=400&&response.status<600}">{{response.status}}</span><span class="tag is-info">{{response.statusText}}</span></td>
                         </tr>
                         <tr ng-repeat="(key,val) in response.config.headers">
                             <td>{{key}}</td>

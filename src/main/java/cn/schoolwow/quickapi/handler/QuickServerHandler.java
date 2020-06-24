@@ -13,6 +13,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
+
 public class QuickServerHandler extends AbstractHandler{
 
     @Override
@@ -91,6 +93,7 @@ public class QuickServerHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(Parameter parameter:parameters){
             Class parameterType = parameter.getType();
+
             if(!parameterType.getName().equals(MultipartFile.class.getName())&&parameterType.getName().startsWith("cn.schoolwow.quickserver")){
                 continue;
             }
@@ -192,7 +195,7 @@ public class QuickServerHandler extends AbstractHandler{
             apiParameter.type = parameter.getType().getName();
             apiParameterList.add(apiParameter);
         }
-        api.apiParameters = apiParameterList.toArray(new APIParameter[0]);
+        api.apiParameters = apiParameterList;
     }
 
     private API handleRequestMapping(Method method){

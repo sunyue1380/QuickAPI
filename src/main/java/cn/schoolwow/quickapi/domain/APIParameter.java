@@ -8,12 +8,14 @@ public class APIParameter {
     private String name;
     /**参数类型*/
     public String type;
+    /**参数实体类型*/
+    public String entityType;
     /**参数请求类型*/
     public String requestType = "text";
     /**参数位置(query,body)*/
     public String position = "body";
     /**描述*/
-    private String description = "";
+    private String description;
     /**是否必须*/
     public boolean required = true;
     /**默认值*/

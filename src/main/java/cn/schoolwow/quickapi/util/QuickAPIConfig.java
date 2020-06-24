@@ -36,5 +36,5 @@ public class QuickAPIConfig {
     /**最终的APIDocument对象*/
     public static APIDocument apiDocument = new APIDocument();
     /**类加载器*/
-    public static URLClassLoader urlClassLoader;
+    public static URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
 }

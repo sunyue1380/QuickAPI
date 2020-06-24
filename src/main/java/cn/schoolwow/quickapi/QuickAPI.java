@@ -1,7 +1,7 @@
 package cn.schoolwow.quickapi;
 
 import cn.schoolwow.quickapi.domain.*;
-import cn.schoolwow.quickapi.handler.*;
+import cn.schoolwow.quickapi.handler.Handler;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickapi.util.QuickAPIUtil;
 import com.alibaba.fastjson.JSON;
@@ -25,16 +25,28 @@ import java.util.jar.JarFile;
 
 import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
 import static cn.schoolwow.quickapi.util.QuickAPIConfig.urlClassLoader;
+import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
 
 public class QuickAPI{
     private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
     /**处理器*/
-    private static Handler[] handlers = new Handler[]{
-            new QuickServerHandler(),
-            new SpringMVCHandler(),
-            new QuickDAOHandler(),
-            new SwaggerHandler()
-    };
+    private static Handler[] handlers;
+    static{
+        //动态加载Handler类
+        Set<String> classNameSet = QuickAPIUtil.scanPackage("cn.schoolwow.quickapi.handler");
+        List<Handler> handlerList = new ArrayList<>();
+        for(String className:classNameSet){
+            if(className.equals("cn.schoolwow.quickapi.handler.AbstractHandler")||className.equals("cn.schoolwow.quickapi.handler.Handler")){
+                continue;
+            }
+            try {
+                handlerList.add((Handler) ClassLoader.getSystemClassLoader().loadClass(className).newInstance());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        handlers = handlerList.toArray(new Handler[0]);
+    }
     public static QuickAPI newInstance(){
         return new QuickAPI();
     }
@@ -217,8 +229,48 @@ public class QuickAPI{
                     handler.handleEntity(apiEntity);
                 }
             }
+            //统一处理参数
+            for(APIController apiController:apiControllerList){
+                for(API api:apiController.apiList){
+                    for(APIParameter apiParameter:api.apiParameters){
+                        //获取实际类型
+                        apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
+                        if(apiParameter.requestType.equals("text")&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType)){
+                            api.parameterEntityNameList.addAll(getRecycleEntity(apiParameter.entityType));
+                        }
+                    }
+                }
+            }
             apiDocument.apiControllerList = apiControllerList;
             QuickAPIUtil.updateJavaDoc(classNameSet);
+            for(APIController apiController:apiControllerList){
+                for(API api:apiController.apiList){
+                    Iterator<APIParameter> iterator = api.apiParameters.iterator();
+                    List<APIParameter> extraAPIParamterList = new ArrayList<>();
+                    while(iterator.hasNext()){
+                        APIParameter apiParameter = iterator.next();
+                        if(apiParameter.requestType.equals("text")&&!apiParameter.parameter.getType().isPrimitive()&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType)){
+                            iterator.remove();
+                            APIEntity apiEntity = QuickAPIConfig.apiDocument.apiEntityMap.get(apiParameter.entityType);
+                            for(APIField apiField:apiEntity.apiFields){
+                                apiParameter = new APIParameter();
+                                apiParameter.setName(apiField.name);
+                                apiParameter.type = apiField.className;
+                                apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
+                                apiParameter.required = apiField.required;
+                                if(apiParameter.type.startsWith("[L")||(apiParameter.type.contains("<"))){
+                                    apiParameter.requestType = "textarea";
+                                    apiParameter.setDescription(apiField.getDescription()+"(多个参数请使用英文逗号分隔)");
+                                }else{
+                                    apiParameter.setDescription(apiField.getDescription());
+                                }
+                                extraAPIParamterList.add(apiParameter);
+                            }
+                        }
+                    }
+                    api.apiParameters.addAll(extraAPIParamterList);
+                }
+            }
 
             //生成API接口信息
             {
@@ -410,7 +462,7 @@ public class QuickAPI{
                         }
                         //判断是否变更
                         for(API oldAPI:oldAPIList){
-                            if(newAPI.equals(oldAPI)&&!Arrays.equals(newAPI.apiParameters,oldAPI.apiParameters)){
+                            if(newAPI.equals(oldAPI)&&!newAPI.apiParameters.equals(oldAPI.apiParameters)){
                                 apiHistory.modifyList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
                                 logger.info("[变更接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                                 break;

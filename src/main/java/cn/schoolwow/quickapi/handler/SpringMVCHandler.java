@@ -19,6 +19,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
+
 public class SpringMVCHandler extends AbstractHandler{
     private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
     /**需要忽略的注解*/
@@ -119,7 +121,10 @@ public class SpringMVCHandler extends AbstractHandler{
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
             Class parameterType = parameters[i].getType();
-            if(!parameterType.getName().equals(MultipartFile.class.getName())&&parameterType.getName().startsWith("org.springframework")){
+            if(!parameterType.getName().equals(MultipartFile.class.getName())
+                    &&(parameterType.getName().startsWith("javax.servlet")
+                    ||parameterType.getName().startsWith("org.springframework"))
+            ){
                 continue;
             }
             for(Class clazz:ignoreAnnotationClasses){
@@ -215,8 +220,8 @@ public class SpringMVCHandler extends AbstractHandler{
             apiParameter.type = parameters[i].getType().getName();
             apiParameterList.add(apiParameter);
         }
-        api.parameterEntityNameList = parameterEntityNameList.toArray(new String[0]);
-        api.apiParameters = apiParameterList.toArray(new APIParameter[0]);
+        api.parameterEntityNameList = parameterEntityNameList;
+        api.apiParameters = apiParameterList;
     }
 
     private API handleMethodMappingClass(Method method){

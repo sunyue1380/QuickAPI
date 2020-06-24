@@ -6,6 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import springfox.documentation.annotations.ApiIgnore;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @apiNote 系统服务
@@ -48,10 +51,25 @@ public class SystemController {
         return true;
     }
 
-    @PostMapping(value = "/upload")
+    /**
+     * 忽略参数
+     * @param user 用户
+     * */
+    @PostMapping(value = "/ignore")
     public void upload(
-            @ApiParam(value = "用户扩展信息",required = true) MultipartFile file
+            @ApiParam(value = "文件",required = true) MultipartFile file,
+            @ApiIgnore User user,
+            HttpServletResponse response
+    ){}
+
+    /**
+     * 表单提交
+     * @param user 用户
+     * */
+    @PostMapping(value = "/updateUser")
+    public void upload(
+            User user
     ){
-        logger.info("[上传文件]参数名:{},文件名:{},文件大小:{}",file.getName(),file.getOriginalFilename(),file.getSize());
+        logger.info("[用户值]用户名:{},密码:{}",user.getUsername(),user.getPassword());
     }
 }

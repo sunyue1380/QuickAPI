@@ -1,7 +1,9 @@
 package cn.schoolwow.quickapi.domain;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class API {
     /**是否被废弃*/
@@ -21,11 +23,11 @@ public class API {
     /**请求编码*/
     public String contentType = "application/x-www-form-urlencoded";
     /**请求参数*/
-    public APIParameter[] apiParameters = new APIParameter[0];
+    public List<APIParameter> apiParameters = new ArrayList<APIParameter>();
     /**返回值*/
     public String returnValue;
     /**请求参数实体类信息*/
-    public String[] parameterEntityNameList = new String[0];
+    public List<String> parameterEntityNameList = new ArrayList<>();
     /**返回实体类信息*/
     public String[] returnEntityNameList = new String[0];
     /**抛出异常*/
