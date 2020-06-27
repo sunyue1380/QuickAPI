@@ -22,14 +22,6 @@ import java.util.List;
 import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
 
 public class SpringMVCHandler extends AbstractHandler{
-    private static LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
-    /**需要忽略的注解*/
-    private static Class[] ignoreAnnotationClasses = new Class[]{SessionAttribute.class};
-    /**映射注解*/
-    private static Class[] mappingClasses = new Class[]{
-            GetMapping.class, PostMapping.class, PutMapping.class,DeleteMapping.class,PatchMapping.class
-    };
-
 
     @Override
     public boolean exist() {
@@ -115,8 +107,9 @@ public class SpringMVCHandler extends AbstractHandler{
     }
 
     private void handleAPIParameter(API api){
-        Parameter[] parameters = api.method.getParameters();
+        LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
         String[] parameterNames = u.getParameterNames(api.method);
+        Parameter[] parameters = api.method.getParameters();
         List<APIParameter> apiParameterList = new ArrayList<>();
         List<String> parameterEntityNameList = new ArrayList<>();
         for(int i=0;i<parameters.length;i++){
@@ -127,10 +120,8 @@ public class SpringMVCHandler extends AbstractHandler{
             ){
                 continue;
             }
-            for(Class clazz:ignoreAnnotationClasses){
-                if(null!=parameters[i].getAnnotation(clazz)){
-                    continue;
-                }
+            if(null!=parameters[i].getAnnotation(SessionAttribute.class)){
+                continue;
             }
 
             //处理泛型
@@ -226,6 +217,8 @@ public class SpringMVCHandler extends AbstractHandler{
 
     private API handleMethodMappingClass(Method method){
         //判断是否有Mapping注解
+        Class[] mappingClasses = new Class[]{
+                GetMapping.class, PostMapping.class, PutMapping.class,DeleteMapping.class,PatchMapping.class};
         for(Class mappingClass:mappingClasses) {
             Annotation annotation = method.getDeclaredAnnotation(mappingClass);
             if(annotation == null){

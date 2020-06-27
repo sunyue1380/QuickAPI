@@ -276,12 +276,13 @@ public class QuickAPIUtil {
                             if(api.method.getParameterCount()!=methodDoc.parameters().length){
                                 continue;
                             }
-                            api.setName(methodDoc.commentText().trim());
-                            api.setName(methodDoc.name());
                             Tag[] apiNotes = methodDoc.tags("apiNote");
                             if (null != apiNotes && apiNotes.length > 0) {
-                                api.setName(apiNotes[0].text());
+                                api.setName(apiNotes[0].inlineTags()[0].text());
                             }
+                            api.setName(methodDoc.commentText().trim());
+                            api.setName(methodDoc.name());
+
                             api.setDescription(methodDoc.commentText().trim());
                             Tag[] authorTags = methodDoc.tags("author");
                             if (null != authorTags && authorTags.length > 0) {

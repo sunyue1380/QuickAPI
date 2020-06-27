@@ -304,7 +304,7 @@
                             <td>{{apiParameter.name}}</td>
                             <td>{{apiParameter.type}}</td>
                             <td>{{apiParameter.requestType}}</td>
-                            <td>{{apiParameter.description}}</td>
+                            <td ng-bind-html="apiParameter.description | trustAsHtml"></td>
                             <td ng-class="{true:'',false:'has-text-grey'}[apiParameter.required]">
                                 {{apiParameter.required}}
                             </td>

@@ -97,27 +97,6 @@ public class QuickServerHandler extends AbstractHandler{
             if(!parameterType.getName().equals(MultipartFile.class.getName())&&parameterType.getName().startsWith("cn.schoolwow.quickserver")){
                 continue;
             }
-            //处理复杂对象
-            if(null==parameter.getDeclaredAnnotation(RequestBody.class)){
-                for(APIField apiField: QuickAPIConfig.apiDocument.apiEntityMap.get(parameterType.getName()).apiFields){
-                    if(apiField.ignore){
-                        continue;
-                    }
-                    APIParameter apiParameter = new APIParameter();
-                    apiParameter.setName(apiField.name);
-                    apiParameter.setDescription(apiField.getDescription());
-                    apiParameter.required = false;
-                    apiParameter.type = apiField.className;
-                    if(apiParameter.type.equals(MultipartFile.class.getName())){
-                        apiParameter.requestType = "file";
-                        api.contentType = "multipart/form-data;";
-                    }
-                    apiParameterList.add(apiParameter);
-                }
-                continue;
-            }else{
-                parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
-            }
 
             //处理泛型
             Type type = parameter.getParameterizedType();
@@ -184,7 +163,7 @@ public class QuickServerHandler extends AbstractHandler{
                     apiParameter.position = "path";
                 }
             }
-            if(parameterType.getName().equals(org.springframework.web.multipart.MultipartFile.class.getName())){
+            if(parameterType.getName().equals(MultipartFile.class.getName())){
                 apiParameter.setName(parameter.getName());
                 apiParameter.requestType = "file";
                 api.contentType = "multipart/form-data;";

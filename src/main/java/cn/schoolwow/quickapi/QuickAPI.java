@@ -433,6 +433,9 @@ public class QuickAPI{
             builder.append(scanner.nextLine());
         }
         scanner.close();
+        if(builder.length()==0||builder.indexOf("{")<0){
+            return;
+        }
         String json = builder.substring(builder.indexOf("{"),builder.lastIndexOf("}")+1);
         APIDocument oldAPIDocument = JSON.parseObject(json).toJavaObject(APIDocument.class);
         //比对API
