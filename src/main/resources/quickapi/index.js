@@ -86,7 +86,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     };
 
     //tab页设置
-    $scope.activeTabName = "";
+    $scope.activeTabName = "/quickapi/history";
     $scope.tabMap = {
         "/quickapi/history":{
             "name": "文档历史",
@@ -289,10 +289,19 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         if(confirm("确认清除请求参数缓存吗?")){
             localStorage.clear();
         }
-    }
+    };
 
-    /**计算请求耗费时间*/
+    //计算请求耗费时间
     $scope.consumeTime = "";
+    //Body显示样式
+    $scope.responseView = {
+        "view": "raw",
+        "type":"object",
+        "keys": []
+    };
+    $scope.changeResponseView = function(view){
+        $scope.responseView.view = view;
+    };
     //执行请求
     $scope.execute = function(){
         //检查必填项
@@ -399,6 +408,16 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $http(operation).then(function(response){
             $scope.response = response;
             $scope.responseJSON = JSON.stringify(response.data,null,4);
+            if(Object.prototype.toString.call(response.data)=='[object Object]'){
+                $scope.responseView.type = "object";
+                $scope.responseView.keys = Object.keys($scope.response.data);
+            }else if(Object.prototype.toString.call(response.data)=='[object Array]'){
+                $scope.responseView.type = "array";
+                $scope.responseView.keys = [];
+                if(response.data.length>0){
+                    $scope.responseView.keys = Object.keys($scope.response.data[0]);
+                }
+            }
         },function(error){
             $scope.response = error;
             $scope.responseJSON = JSON.stringify(error.data,null,4);

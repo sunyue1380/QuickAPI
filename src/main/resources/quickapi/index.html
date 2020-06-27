@@ -28,6 +28,17 @@
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/environment'}" ng-click="showEnvironment();">环境设置</a></li>
             </ul>
             <p class="menu-label">
+                清除缓存
+            </p>
+            <ul class="menu-list">
+                <li>
+                    <a ng-click="cleanHistory();">清除历史记录</a>
+                </li>
+                <li>
+                    <a ng-click="cleanParameter();">清除参数缓存</a>
+                </li>
+            </ul>
+            <p class="menu-label">
                 最近使用
             </p>
             <ul class="menu-list" ng-show="lastUsed.length>0">
@@ -36,14 +47,6 @@
                         <s ng-show="api.deprecated">{{api.name}}</s>
                         <span ng-show="!api.deprecated">{{api.name}}</span>
                     </a>
-                </li>
-                <li>
-                    <a ng-click="cleanHistory();">清除历史记录</a>
-                </li>
-            </ul>
-            <ul class="menu-list">
-                <li>
-                    <a ng-click="cleanParameter();">清除参数缓存</a>
                 </li>
             </ul>
             <p class="menu-label" ng-show="searchText==null||''==searchText">
@@ -360,7 +363,37 @@
                         </tr>
                     </table>
                     <h1 class="title">Body信息</h1>
-                    <pre>{{responseJSON}}</pre>
+                    <div class="tabs">
+                        <ul>
+                            <li ng-class="{'is-active':responseView.view=='raw'}" ng-click="changeResponseView('raw');"><a>RAW</a></li>
+                            <li ng-class="{'is-active':responseView.view=='table'}" ng-click="changeResponseView('table');"><a>Table</a></li>
+                        </ul>
+                    </div>
+                    <div ng-show="responseView.view=='raw'">
+                        <pre>{{responseJSON}}</pre>
+                    </div>
+                    <div ng-show="responseView.view=='table'">
+                        <table class="table is-striped is-narrow is-hoverable is-fullwidth">
+                            <tbody ng-show="responseView.type=='object'">
+                                <tr>
+                                    <th>属性</th>
+                                    <th>值</th>
+                                </tr>
+                                <tr ng-repeat="key in responseView.keys">
+                                    <td>{{key}}</td>
+                                    <td>{{response.data[key]}}</td>
+                                </tr>
+                            </tbody>
+                            <tbody ng-show="responseView.type=='array'">
+                            <tr>
+                                <th ng-repeat="key in responseView.keys">{{key}}</th>
+                            </tr>
+                            <tr ng-repeat="o in response.data">
+                                <td ng-repeat="key in responseView.keys">{{o[key]}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                     <h1 class="title" ng-show="currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
                     <entity-table entity="apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></entity-table>
                     <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></div>
