@@ -372,7 +372,7 @@
                     <div ng-show="responseView.view=='raw'">
                         <pre>{{responseJSON}}</pre>
                     </div>
-                    <div ng-show="responseView.view=='table'">
+                    <div ng-show="response!=null&&responseView.view=='table'">
                         <table class="table is-striped is-narrow is-hoverable is-fullwidth">
                             <tbody ng-show="responseView.type=='object'">
                                 <tr>
