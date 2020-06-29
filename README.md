@@ -38,6 +38,23 @@ QuickAPI.newInstance()
 |url|""|html文件生成url路径|
 |generate|无|生成文件|
 
+# 详细参数文档
+
+|方法名|是否必须|默认值|说明|
+|---|---|---|---|
+|controller|是|无|待扫描包,QuickAPI会扫描该目录下的控制器类,可多次调用此方法|
+|sourcePath|否|``System.getProperty("user.dir")+"/src/main/java"``|指定Java源文件(.java文件)所在目录|
+|classPath|否|系统类加载器所加载的类|扫描的.class文件所在目录,可多次调用|
+|lib|否|无|jar包文件所在目录,QuickAPi会扫描并加载该目录下的.jar文件|
+|prefix|否|""|路径前缀,并在所有url前添加此前缀,默认为空|
+|ignorePackageName|否|无|需要忽略的包|
+|ignoreClass|否|无|需要忽略的类|
+|filter|否|无|自定义逻辑是否需要忽略该类|
+|directory|否|``./src/main/resources``|html文件生成目录|
+|url|否|""|html文件生成url路径|
+|generate|是|无|生成文件|
+|upload|否|无|上传API文档到QuickAPI服务器(搭配QuickAPIServer项目使用)|
+
 # 贡献
 
 本开源项目还在不断完善中,欢迎有识之士一起来完善项目.
