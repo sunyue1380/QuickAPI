@@ -27,6 +27,23 @@ app.filter('trustAsHtml', function ($sce) {
         return $sce.trustAsHtml(value);
     };
 });
+app.filter('since', function () {
+    return function (lastUpdateTime) {
+        let duration = Math.floor((new Date().getTime() - lastUpdateTime) / 1000);
+        if (duration < 60) {
+            return duration + "秒前";
+        } else if (duration < 3600) {
+            return Math.floor(duration / 60) + "分钟前";
+        } else if (duration < 24 * 3600) {
+            return Math.floor(duration / 60 / 60) + "小时前";
+        } else if(duration < 24 * 3600 * 365){
+            return Math.floor(duration / 60 / 60 / 24) + "天前";
+        } else {
+            return Math.floor(duration / 60 / 60 / 24 / 365) + "年前";
+        }
+    };
+});
+
 app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
     $scope.offline = false;
     //判断访问协议
@@ -275,10 +292,19 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $anchorScroll();
     };
 
-    $scope.response = null;
-
     //最近使用
     $scope.lastUsed  = $scope.getFromLocalStorage("lastUsed",[]);
+    //处理历史使用记录
+    for(let i=0;i<$scope.lastUsed.length;i++){
+        for(let j=0;j<$scope.apiDocument.apiControllerList.length;j++){
+            for(let k=0;k<$scope.apiDocument.apiControllerList[j].apiList.length;k++){
+                if($scope.lastUsed[i].url===$scope.apiDocument.apiControllerList[j].apiList[k].url){
+                    $scope.lastUsed[i] = $scope.apiDocument.apiControllerList[j].apiList[k];
+                    break;
+                }
+            }
+        }
+    }
     $scope.cleanHistory = function(){
         if(confirm("确认清除历史记录吗?")){
             $scope.lastUsed  = [];
@@ -302,6 +328,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $scope.changeResponseView = function(view){
         $scope.responseView.view = view;
     };
+    $scope.response = null;
     //执行请求
     $scope.execute = function(){
         //检查必填项
@@ -354,7 +381,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 delete $scope.request[apiParameter.name];
             }
         }
-        operation.url = $scope.apiDocument.prefix+operation.url;
         let method = $scope.currentAPI.methods[0];
         if(method==="all"){
             method = "POST";

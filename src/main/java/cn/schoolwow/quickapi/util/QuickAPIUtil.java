@@ -126,13 +126,17 @@ public class QuickAPIUtil {
      * */
     public static boolean needIgnoreClass(String className){
         //排除基础类型
-        if(className.equals("boolean")
-                ||className.equals("char")
-                ||className.equals("short")
-                ||className.equals("int")
-                ||className.equals("long")
-                ||className.equals("float")
-                ||className.equals("double")
+        if(className.startsWith("byte")
+                ||className.startsWith("boolean")
+                ||className.startsWith("char")
+                ||className.startsWith("short")
+                ||className.startsWith("int")
+                ||className.startsWith("long")
+                ||className.startsWith("float")
+                ||className.startsWith("double")
+                ||className.equals("T")
+                ||className.equals("E")
+                ||className.equals("?")
         ){
             return true;
         }
@@ -149,16 +153,27 @@ public class QuickAPIUtil {
      * @param className 类名
      * */
     public static Set<String> getRecycleEntity(String className) {
-        Set<String> apiEntitySet = new LinkedHashSet<>();
-        if(QuickAPIUtil.needIgnoreClass(className)){
-            return apiEntitySet;
-        }
         Stack<String> apiEntityStack = new Stack<>();
-        apiEntityStack.push(className);
+        //匹配存在泛型的情况
+        while(className.contains("<")){
+            apiEntityStack.add(className.substring(0,className.indexOf("<")));
+            className = className.substring(className.indexOf("<")+1,className.lastIndexOf(">"));
+        }
+        apiEntityStack.add(className);
+
+        Set<String> apiEntitySet = new LinkedHashSet<>();
         while (!apiEntityStack.isEmpty()) {
+            className = apiEntityStack.pop();
+            //匹配存在数组的情况
+            if(className.startsWith("[")){
+                className = className.substring(2,className.length()-1);
+            }
+            if(QuickAPIUtil.needIgnoreClass(className)){
+                continue;
+            }
             Class clazz = null;
             try {
-                clazz = QuickAPIConfig.urlClassLoader.loadClass(apiEntityStack.pop());
+                clazz = QuickAPIConfig.urlClassLoader.loadClass(className);
             } catch (ClassNotFoundException e) {
                 logger.warn("[加载类不存在]类名:{}", className);
                 continue;

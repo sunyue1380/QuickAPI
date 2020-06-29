@@ -99,27 +99,48 @@
                     <h2 class="subtitle">
                         接口列表的变化历史
                     </h2>
+
                     <div class="tile is-ancestor">
                         <div class="tile is-vertical">
                             <div class="tile is-parent" ng-repeat="apiHistory in apiDocument.apiHistoryList">
-                                <div class="tile is-child">
-                                    <h1 class="title">{{apiHistory.updateTime | date:'yyyy-MM-dd HH:mm:ss'}}</h1>
-                                    <ul>
-                                        <li ng-repeat="api in apiHistory.addList"><span class="tag is-primary">新增</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}
-                                            <button class="button is-info is-small" ng-click="setCurrentAPI(api);">
-                                                {{api.name}}
-                                            </button>
-                                        </li>
-                                        <li ng-repeat="api in apiHistory.modifyList"><span
-                                                class="tag is-warning">变更</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}
-                                            <button class="button is-warning is-small" ng-click="setCurrentAPI(api);">
-                                                {{api.name}}
-                                            </button>
-                                        </li>
-                                        <li ng-repeat="api in apiHistory.deleteList"><span
-                                                class="tag is-danger">删除</span>{{api.methods[0]}}&nbsp;&nbsp;{{api.url}}
-                                        </li>
-                                    </ul>
+                                <div class="tile is-child" ng-show="apiHistory.addList.length>0||apiHistory.modifyList.length>0||apiHistory.deleteList.length>0">
+                                    <h1 class="title">{{apiHistory.updateTime | since}}</h1>
+                                    <table class="table is-fullwidth">
+                                        <tr>
+                                            <th>操作</th>
+                                            <th>方法</th>
+                                            <th>地址</th>
+                                            <th>说明</th>
+                                            <th>查看</th>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.addList">
+                                            <td><span class="tag is-primary">新增</span></td>
+                                            <td>{{api.methods[0]}}</td>
+                                            <td>{{api.url}}</td>
+                                            <td ng-bind-html="api.description | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.modifyList">
+                                            <td><span class="tag is-warning">变更</span></td>
+                                            <td>{{api.methods[0]}}</td>
+                                            <td>{{api.url}}</td>
+                                            <td ng-bind-html="api.description | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.deleteList">
+                                            <td><span class="tag is-danger">删除</span></td>
+                                            <td><s>{{api.methods[0]}}</s></td>
+                                            <td><s>{{api.url}}</s></td>
+                                            <td ng-bind-html="'<s>'+api.description+'</s>' | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -285,6 +306,10 @@
                 </div>
             </div>
             <div class="columns is-multiline">
+                <div class="column is-12">
+                    <h1 class="title">请求类型</h1>
+                    <span class="tag is-info is-large">{{currentAPI.contentType}}</span>
+                </div>
                 <div class="column is-12">
                     <h1 class="title">请求参数</h1>
                     <table class="table is-striped is-narrow is-hoverable is-fullwidth">

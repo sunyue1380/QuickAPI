@@ -9,8 +9,6 @@ public class APIDocument {
     public String description;
     /**生成时间*/
     public Date date = new Date();
-    /**路径前缀*/
-    public String prefix = "";
     /**控制器*/
     public List<APIController> apiControllerList;
     /**实体类*/

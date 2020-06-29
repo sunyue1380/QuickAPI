@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @apiNote 系统服务
@@ -71,5 +73,13 @@ public class SystemController {
             User user
     ){
         logger.info("[用户值]用户名:{},密码:{}",user.getUsername(),user.getPassword());
+    }
+
+    /**
+     * 获取用户
+     * */
+    @PostMapping(value = "/getUserList")
+    public Response<List<User>> getUserList(){
+        return new Response<List<User>>(true,new ArrayList<User>(),"");
     }
 }

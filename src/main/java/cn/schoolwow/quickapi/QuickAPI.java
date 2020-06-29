@@ -95,7 +95,13 @@ public class QuickAPI{
      * @param prefix 接口路径前缀(context-path)
      * */
     public QuickAPI prefix(String prefix){
-        apiDocument.prefix = prefix;
+        if(null==prefix||prefix.isEmpty()){
+            return this;
+        }
+        if(!prefix.startsWith("/")){
+            prefix = "/"+prefix;
+        }
+        QuickAPIConfig.prefix = prefix;
         return this;
     }
 
@@ -232,6 +238,7 @@ public class QuickAPI{
             //统一处理参数
             for(APIController apiController:apiControllerList){
                 for(API api:apiController.apiList){
+                    api.url = QuickAPIConfig.prefix + api.url;
                     for(APIParameter apiParameter:api.apiParameters){
                         //获取实际类型
                         apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);

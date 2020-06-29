@@ -12,6 +12,8 @@ public class QuickAPIConfig {
     public static String url = "/quickapi";
     /**指定生成路径*/
     public static String directory = "./src/main/resources";
+    /**路径前缀*/
+    public static String prefix = "";
     /**指定Java源代码路径*/
     public static StringBuilder sourcePathBuilder = new StringBuilder(System.getProperty("user.dir")+"/src/main/java;");
     /**指定类文件路径*/
