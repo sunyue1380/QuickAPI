@@ -290,10 +290,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 $scope.request[apiParameters[i].name] = JSON.stringify(data,null,4);
             }
         }
-        let requestValue = $scope.getFromLocalStorage($scope.currentAPI.url);
-        if(null!=requestValue&&""!=requestValue){
-            $scope.request = JSON.parse(requestValue);
-        }
+        $scope.request = $scope.getFromLocalStorage($scope.currentAPI.url,$scope.request);
 
         $location.hash("top");
         $anchorScroll();
