@@ -49,12 +49,13 @@
                     </a>
                 </li>
             </ul>
-            <p class="menu-label" ng-show="searchText==null||''==searchText">
+            <p class="menu-label">
                 实体类信息
             </p>
-            <ul class="menu-list" ng-show="searchText==null||''==searchText">
+            <ul class="menu-list">
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/entity/'+val.className}"
-                       ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);">{{val.simpleName}}{{val.description==null||val.description==''?'':'('+val.description+')' | trustAsHtml}}</a>
+                       ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);" ng-show="showEntity(key)">
+                    {{val.simpleName}}{{val.description==null||val.description==''?'':'('+val.description+')' | trustAsHtml}}</a>
                 </li>
             </ul>
             <p class="menu-label">
@@ -392,6 +393,7 @@
                         <ul>
                             <li ng-class="{'is-active':responseView.view=='raw'}" ng-click="changeResponseView('raw');"><a>RAW</a></li>
                             <li ng-class="{'is-active':responseView.view=='table'}" ng-click="changeResponseView('table');"><a>Table</a></li>
+                            <li ng-class="{'is-active':responseView.view=='html'}" ng-click="changeResponseView('html');"><a>HTML</a></li>
                         </ul>
                     </div>
                     <div ng-show="responseView.view=='raw'">
@@ -418,6 +420,9 @@
                             </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div ng-show="responseView.view=='html'">
+                        <iframe id="iframe" style="width: 100%; height: 300px;"></iframe>
                     </div>
                     <h1 class="title" ng-show="currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
                     <entity-table entity="apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></entity-table>

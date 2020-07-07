@@ -88,8 +88,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
      * 从本地存储中获取
      * */
     $scope.getFromLocalStorage = function(key,defaultValue){
-        if(null!=localStorage.getItem(key)){
-            return JSON.parse(localStorage.getItem(key));
+        if(null!=localStorage.getItem(location.origin+location.pathname+"_"+key)){
+            return JSON.parse(localStorage.getItem(location.origin+location.pathname+"_"+key));
         }
         return defaultValue;
     };
@@ -98,7 +98,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
      * */
     $scope.saveToLocalStorage = function(key,value){
         if(typeof(value)!="undefined"&&null!=value){
-            localStorage.setItem(key,JSON.stringify(value));
+            localStorage.setItem(location.origin+location.pathname+"_"+key,JSON.stringify(value));
         }
     };
 
@@ -230,6 +230,13 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
     //API搜索
     $scope.searchText = "";
+    $scope.showEntity = function(className){
+        if($scope.searchText===""){
+            return true;
+        }
+        return className.indexOf($scope.searchText)>=0;
+    };
+
     //过滤APIController
     $scope.showApiController = function(apiController){
         if($scope.searchText===""){
@@ -283,7 +290,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 $scope.request[apiParameters[i].name] = JSON.stringify(data,null,4);
             }
         }
-        let requestValue = localStorage.getItem($scope.currentAPI.url);
+        let requestValue = $scope.getFromLocalStorage($scope.currentAPI.url);
         if(null!=requestValue&&""!=requestValue){
             $scope.request = JSON.parse(requestValue);
         }
@@ -293,7 +300,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     };
 
     //最近使用
-    $scope.lastUsed  = $scope.getFromLocalStorage("lastUsed",[]);
+    $scope.lastUsed  = $scope.getFromLocalStorage("#lastUsed#",[]);
     //处理历史使用记录
     for(let i=0;i<$scope.lastUsed.length;i++){
         for(let j=0;j<$scope.apiDocument.apiControllerList.length;j++){
@@ -308,7 +315,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $scope.cleanHistory = function(){
         if(confirm("确认清除历史记录吗?")){
             $scope.lastUsed  = [];
-            $scope.saveToLocalStorage("lastUsed",$scope.lastUsed);
+            $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
         }
     };
     $scope.cleanParameter = function(){
@@ -329,6 +336,10 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.responseView.view = view;
     };
     $scope.response = null;
+    let iframe = document.getElementById("iframe");
+    $scope.iframe = document.all ? iframe.contentWindow.document : iframe.contentDocument;
+    $scope.iframe.contentEditable = true;
+    $scope.iframe.designMode = 'on';
     //执行请求
     $scope.execute = function(){
         //检查必填项
@@ -448,10 +459,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             $scope.response = error;
             $scope.responseJSON = JSON.stringify(error.data,null,4);
         }).finally(function(){
+            $scope.iframe.open();
+            $scope.iframe.write($scope.response.data);
+            $scope.iframe.close();
+
             let endTime = new Date().getTime();
             $scope.consumeTime = (endTime-startTime)+"ms";
             $scope.loading = false;
-            localStorage.setItem($scope.currentAPI.url,JSON.stringify($scope.request));
+            $scope.saveToLocalStorage($scope.currentAPI.url,$scope.request);
             if($scope.lastUsed.length>5){
                 $scope.lastUsed.shift();
             }
@@ -465,7 +480,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }
             if(!exist){
                 $scope.lastUsed.unshift($scope.currentAPI);
-                $scope.saveToLocalStorage("lastUsed",$scope.lastUsed);
+                $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
             }
         });
     };
