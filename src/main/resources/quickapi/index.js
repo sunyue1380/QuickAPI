@@ -51,26 +51,32 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.offline = true;
     }
     $scope.apiDocument = apiDocument;
+
+    /**name=api.methods[0]+'_'+api.url*/
+    $scope.getAPI = function(name){
+        for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
+            let apiList = $scope.apiDocument.apiControllerList[i].apiList;
+            for(let j=0;j<apiList.length;j++){
+                let historyName =  apiList[j].methods[0]+"_"+apiList[j].url;
+                if(historyName==name){
+                    return apiList[j];
+                }
+            }
+        }
+        return "";
+    };
+
     //处理历史变更记录
     for(let i=0;i<$scope.apiDocument.apiHistoryList.length;i++){
         let addList = $scope.apiDocument.apiHistoryList[i].addList;
         let modifyList = $scope.apiDocument.apiHistoryList[i].modifyList;
-        for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
-            let apiList = $scope.apiDocument.apiControllerList[i].apiList;
-            for(let j=0;j<apiList.length;j++){
-                let historyName =  $scope.apiDocument.apiControllerList[i].className+"#"+apiList[j].methods[0]+"_"+apiList[j].url;
-                for(let l=0;l<addList.length;l++){
-                    if(addList[l]===historyName){
-                        addList[l] = apiList[j];
-                    }
-                }
-                for(let l=0;l<modifyList.length;l++){
-                    if(modifyList[l]===historyName){
-                        modifyList[l] = apiList[j];
-                    }
-                }
-            }
+        for(let l=0;l<addList.length;l++){
+            addList[l] = $scope.getAPI(addList[l]);
         }
+        for(let l=0;l<modifyList.length;l++){
+            modifyList[l] = $scope.getAPI(modifyList[l]);
+        }
+
         //剔除已经不存在的接口
         for(let l=0;l<addList.length;l++){
             if(typeof(addList[l])=="string"){
@@ -213,6 +219,72 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     };
 
+    //环境设置
+    $scope.showSettings = function(){
+        $scope.view = "settings";
+        $scope.tabMap["/quickapi/settings"] = {
+            "name": "文档设置",
+            "view": "settings"
+        };
+        $scope.activeTabName = "/quickapi/settings";
+    };
+
+    $scope.settings = $scope.getFromLocalStorage("#settings#", {
+        "showEntity":true,
+        "showLastUsed":true,
+        "lastUsedLength":5,
+    });
+    $scope.$watch("settings",function(newValue,oldValue){
+        $scope.saveToLocalStorage("#settings#",newValue);
+    },true);
+
+    //收藏功能
+    $scope.collectionList = $scope.getFromLocalStorage("#collectionList#",[]);
+
+    $scope.collect = function(api){
+        $scope.collectionList.push(api);
+        api.hasCollect = true;
+        $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
+    };
+
+    $scope.cancelCollect = function(api){
+        for(let i=0;i<$scope.collectionList.length;i++){
+            if($scope.collectionList[i]==api){
+                $scope.collectionList.splice(i,1);
+                break;
+            }
+        }
+        api.hasCollect = false;
+        $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
+    };
+
+    //最近使用
+    $scope.lastUsed = $scope.getFromLocalStorage("#lastUsed#",[]);
+    //处理历史使用记录
+    for(let i=0;i<$scope.lastUsed.length;i++){
+        $scope.lastUsed[i] = $scope.getAPI($scope.lastUsed[i]);
+    }
+
+    $scope.cleanCollectionList = function(){
+        if(confirm("确认清空收藏记录吗?")){
+            $scope.collectionList  = [];
+            $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
+        }
+    };
+
+    $scope.cleanHistory = function(){
+        if(confirm("确认清空历史记录吗?")){
+            $scope.lastUsed  = [];
+            $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
+        }
+    };
+
+    $scope.cleanParameter = function(){
+        if(confirm("确认清空请求参数缓存吗?")){
+            localStorage.clear();
+        }
+    };
+
     //实体类显示
     $scope.setCurrentEntity = function(entity){
         $scope.view = "entity";
@@ -292,33 +364,16 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
         $scope.request = $scope.getFromLocalStorage($scope.currentAPI.url,$scope.request);
 
-        $location.hash("top");
-        $anchorScroll();
-    };
-
-    //最近使用
-    $scope.lastUsed  = $scope.getFromLocalStorage("#lastUsed#",[]);
-    //处理历史使用记录
-    for(let i=0;i<$scope.lastUsed.length;i++){
-        for(let j=0;j<$scope.apiDocument.apiControllerList.length;j++){
-            for(let k=0;k<$scope.apiDocument.apiControllerList[j].apiList.length;k++){
-                if($scope.lastUsed[i].url===$scope.apiDocument.apiControllerList[j].apiList[k].url){
-                    $scope.lastUsed[i] = $scope.apiDocument.apiControllerList[j].apiList[k];
-                    break;
-                }
+        $scope.currentAPI.hasCollect = false;
+        for(let i=0;i<$scope.collectionList.length;i++){
+            if($scope.collectionList[i]==api){
+                $scope.currentAPI.hasCollect = true;
+                break;
             }
         }
-    }
-    $scope.cleanHistory = function(){
-        if(confirm("确认清除历史记录吗?")){
-            $scope.lastUsed  = [];
-            $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
-        }
-    };
-    $scope.cleanParameter = function(){
-        if(confirm("确认清除请求参数缓存吗?")){
-            localStorage.clear();
-        }
+
+        $location.hash("top");
+        $anchorScroll();
     };
 
     //计算请求耗费时间
@@ -464,7 +519,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             $scope.consumeTime = (endTime-startTime)+"ms";
             $scope.loading = false;
             $scope.saveToLocalStorage($scope.currentAPI.url,$scope.request);
-            if($scope.lastUsed.length>5){
+
+            if($scope.lastUsed.length>$scope.settings.lastUsedLength){
                 $scope.lastUsed.shift();
             }
             //判断是否有重复
@@ -477,7 +533,13 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }
             if(!exist){
                 $scope.lastUsed.unshift($scope.currentAPI);
-                $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
+                let lastUsed = [];
+                for(let i=0;i<$scope.lastUsed.length;i++){
+                    console.log($scope.lastUsed[i]);
+                    let historyName =  $scope.lastUsed[i].methods[0]+"_"+$scope.lastUsed[i].url;
+                    lastUsed.push(historyName);
+                }
+                $scope.saveToLocalStorage("#lastUsed#",lastUsed);
             }
         });
     };

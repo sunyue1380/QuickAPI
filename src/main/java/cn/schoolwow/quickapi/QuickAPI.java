@@ -454,7 +454,7 @@ public class QuickAPI{
             if(!oldAPIControllerList.contains(newAPIController)){
                 List<API> newAPIList = newAPIController.apiList;
                 for(API api:newAPIList){
-                    apiHistory.addList.add(newAPIController.className+"#"+api.methods[0]+"_"+api.url);
+                    apiHistory.addList.add(api.methods[0]+"_"+api.url);
                     logger.info("[新增接口]{} {} {}",api.getName(),api.methods[0],api.url);
                 }
                 continue;
@@ -466,14 +466,14 @@ public class QuickAPI{
                     for(API newAPI:newAPIList){
                         //判断是否新增
                         if(!oldAPIList.contains(newAPI)){
-                            apiHistory.addList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
+                            apiHistory.addList.add(newAPI.methods[0]+"_"+newAPI.url);
                             logger.info("[新增接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                             continue;
                         }
                         //判断是否变更
                         for(API oldAPI:oldAPIList){
                             if(newAPI.equals(oldAPI)&&!newAPI.apiParameters.equals(oldAPI.apiParameters)){
-                                apiHistory.modifyList.add(newAPIController.className+"#"+newAPI.methods[0]+"_"+newAPI.url);
+                                apiHistory.modifyList.add(newAPI.methods[0]+"_"+newAPI.url);
                                 logger.info("[变更接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                                 break;
                             }

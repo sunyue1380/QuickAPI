@@ -26,22 +26,23 @@
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/history'}" ng-click="showHistory();">文档历史</a></li>
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/globalHeader'}" ng-click="showGlobalHeaders();">全局头部</a></li>
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/environment'}" ng-click="showEnvironment();">环境设置</a></li>
+                <li><a ng-class="{'is-active':activeTabName=='/quickapi/settings'}" ng-click="showSettings();">文档设置</a></li>
             </ul>
             <p class="menu-label">
-                清除缓存
+                收藏列表
             </p>
-            <ul class="menu-list">
-                <li>
-                    <a ng-click="cleanHistory();">清除历史记录</a>
-                </li>
-                <li>
-                    <a ng-click="cleanParameter();">清除参数缓存</a>
+            <ul class="menu-list" ng-show="collectionList.length>0">
+                <li ng-repeat="api in collectionList track by api.url">
+                    <a ng-class="{'is-active':currentAPI==api}" ng-click="setCurrentAPI(api);">
+                        <s ng-show="api.deprecated">{{api.name}}</s>
+                        <span ng-show="!api.deprecated">{{api.name}}</span>
+                    </a>
                 </li>
             </ul>
-            <p class="menu-label">
+            <p class="menu-label" ng-show="settings.showLastUsed">
                 最近使用
             </p>
-            <ul class="menu-list" ng-show="lastUsed.length>0">
+            <ul class="menu-list" ng-show="settings.showLastUsed&&lastUsed.length>0">
                 <li ng-repeat="api in lastUsed track by api.url">
                     <a ng-class="{'is-active':currentAPI==api}" ng-click="setCurrentAPI(api);">
                         <s ng-show="api.deprecated">{{api.name}}</s>
@@ -49,10 +50,10 @@
                     </a>
                 </li>
             </ul>
-            <p class="menu-label">
+            <p class="menu-label" ng-show="settings.showEntity">
                 实体类信息
             </p>
-            <ul class="menu-list">
+            <ul class="menu-list" ng-show="settings.showEntity">
                 <li><a ng-class="{'is-active':activeTabName=='/quickapi/entity/'+val.className}"
                        ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);" ng-show="showEntity(key)">
                     {{val.simpleName}}{{val.description==null||val.description==''?'':'('+val.description+')' | trustAsHtml}}</a>
@@ -198,34 +199,8 @@
                     <table class="table is-fullwidth">
                         <thead>
                         <tr>
-                            <th>地址
-                                <div class="dropdown is-hoverable">
-                                    <div class="dropdown-trigger">
-                                        <span class="icon has-text-info"><i class="fas fa-info-circle"></i></span>
-                                    </div>
-                                    <div class="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <div class="dropdown-item">
-                                                <p>请带上http(s)前缀,例如http://127.0.0.1:9000</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </th>
-                            <th>模式
-                                <div class="dropdown is-hoverable">
-                                    <div class="dropdown-trigger">
-                                        <span class="icon has-text-info"><i class="fas fa-info-circle"></i></span>
-                                    </div>
-                                    <div class="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <div class="dropdown-item">
-                                                <p><b>直连</b>:&nbsp;直接发送给目标机器,需要目标机器支持跨域请求</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </th>
+                            <th title="请带上http(s)前缀,例如http://127.0.0.1:9000">地址</th>
+                            <th title="直连:直接发送给目标机器,需要目标机器支持跨域请求">模式</th>
                             <th>是否启用</th>
                             <th>删除</th>
                         </tr>
@@ -275,11 +250,61 @@
                 </div>
             </section>
         </div>
+        <div ng-show="view=='settings'">
+            <section class="section">
+                <div class="container">
+                    <h1 class="title">文档设置</h1>
+                    <h2 class="subtitle">
+                        文档设置项
+                    </h2>
+
+                    <div class="columns box">
+                        <div class="buttons">
+                            <div class="button is-info" ng-click="cleanHistory();">清空最近使用记录</div>
+                            <div class="button is-info" ng-click="cleanParameter();">清空请求参数缓存</div>
+                            <div class="button is-info" ng-click="cleanCollectionList();">清空收藏记录列表</div>
+                        </div>
+                    </div>
+
+                    <div class="columns box">
+                        <label class="checkbox">
+                            <input type="checkbox" ng-model="settings.showEntity">
+                            显示实体类
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" ng-model="settings.showLastUsed">
+                            显示最近使用历史记录
+                        </label>
+                    </div>
+
+                    <div class="columns box is-multiline">
+                        <div class="column is-12">
+                            <div class="field is-horizontal">
+                                <div class="field-label is-normal">
+                                    <label class="label">最近使用记录保留个数</label>
+                                </div>
+                                <div class="field-body">
+                                    <div class="field">
+                                        <p class="control">
+                                            <input class="input" type="number" value="5" ng-model="settings.lastUsedLength">
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
         <div ng-show="view=='entity'">
             <div ng-include src="'/entityTable.html'"></div>
         </div>
         <div ng-show="view=='api'">
-            <h1 class="title">{{currentAPI.name}}</h1>
+            <h1 class="title">
+                {{currentAPI.name}}
+                <button class="button is-primary" ng-show="!currentAPI.hasCollect" ng-click="collect(currentAPI)">收藏</button>
+                <button class="button is-danger" ng-show="currentAPI.hasCollect" ng-click="cancelCollect(currentAPI);">取消收藏</button>
+            </h1>
             <article class="message is-danger" ng-show="currentAPI.deprecated">
                 <div class="message-body">
                     请注意,该接口已被废弃!
