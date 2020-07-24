@@ -33,7 +33,7 @@
             </p>
             <ul class="menu-list" ng-show="collectionList.length>0">
                 <li ng-repeat="api in collectionList track by api.url">
-                    <a ng-class="{'is-active':currentAPI==api}" ng-click="setCurrentAPI(api);">
+                    <a ng-class="{'is-active':activeTabName==api.url+api.methods[0]}" ng-click="setCurrentAPI(api);">
                         <s ng-show="api.deprecated">{{api.name}}</s>
                         <span ng-show="!api.deprecated">{{api.name}}</span>
                     </a>
@@ -44,7 +44,7 @@
             </p>
             <ul class="menu-list" ng-show="settings.showLastUsed&&lastUsed.length>0">
                 <li ng-repeat="api in lastUsed track by api.url">
-                    <a ng-class="{'is-active':currentAPI==api}" ng-click="setCurrentAPI(api);">
+                    <a ng-class="{'is-active':activeTabName==api.url+api.methods[0]}" ng-click="setCurrentAPI(api);">
                         <s ng-show="api.deprecated">{{api.name}}</s>
                         <span ng-show="!api.deprecated">{{api.name}}</span>
                     </a>
@@ -261,7 +261,6 @@
                     <div class="columns box">
                         <div class="buttons">
                             <div class="button is-info" ng-click="cleanHistory();">清空最近使用记录</div>
-                            <div class="button is-info" ng-click="cleanParameter();">清空请求参数缓存</div>
                             <div class="button is-info" ng-click="cleanCollectionList();">清空收藏记录列表</div>
                         </div>
                     </div>
@@ -331,6 +330,9 @@
                     <span class="tag is-info" ng-show="null!=currentAPI.since">{{currentAPI.since}}</span>
                 </div>
             </div>
+            <div class="columns is-gapless">
+                <textarea class="textarea" ng-model="api.content" rows="5" cols="50" placeholder="可在此输入接口测试需求信息等等"></textarea>
+            </div>
             <div class="columns is-multiline">
                 <div class="column is-12">
                     <h1 class="title">请求类型</h1>
@@ -364,9 +366,9 @@
                             </td>
                             <td>{{apiParameter.defaultValue}}</td>
                             <td ng-switch="apiParameter.requestType">
-                                <input class="input" ng-switch-when="text" type="text" ng-model="request[apiParameter.name]">
-                                <input class="input" ng-switch-when="file" type="file" id="{{apiParameter.name}}" ng-model="request[apiParameter.name]">
-                                <textarea ng-switch-when="textarea" class="textarea" ng-model="request[apiParameter.name]" rows="10" cols="30"></textarea>
+                                <input class="input" ng-switch-when="text" type="text" ng-model="api.request[apiParameter.name]">
+                                <input class="input" ng-switch-when="file" type="file" id="{{apiParameter.name}}" ng-model="api.request[apiParameter.name]">
+                                <textarea ng-switch-when="textarea" class="textarea" ng-model="api.request[apiParameter.name]" rows="10" cols="30"></textarea>
                             </td>
                         </tr>
                         </tbody>
@@ -406,7 +408,7 @@
                             <td>耗时</td><td><span class="tag is-info">{{consumeTime}}</span></td>
                         </tr>
                         <tr>
-                            <td>返回头</td><td><span class="tag" ng-class="{'is-success':response.status<400||response.status>500,'is-danger':response.status>=400&&response.status<600}">{{response.status}}</span><span class="tag is-info">{{response.statusText}}</span></td>
+                            <td>返回头</td><td><span class="tag" ng-class="{'is-success':response.status<400||response.status>500,'is-danger':response.status>=400&&response.status<600}">{{response.status}}</span></td>
                         </tr>
                         <tr ng-repeat="(key,val) in response.config.headers">
                             <td>{{key}}</td>

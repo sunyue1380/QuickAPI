@@ -279,12 +279,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     };
 
-    $scope.cleanParameter = function(){
-        if(confirm("确认清空请求参数缓存吗?")){
-            localStorage.clear();
-        }
-    };
-
     //实体类显示
     $scope.setCurrentEntity = function(entity){
         $scope.view = "entity";
@@ -341,6 +335,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
     //显示API详情
     $scope.currentAPI = null;
+    $scope.api = {
+        "url":"",
+        "content":"",
+        "request":null
+    };
+    $scope.$watch("api",function(newValue,oldValue){
+        $scope.saveToLocalStorage(newValue.url,newValue);
+    },true);
     $scope.setCurrentAPI = function(api){
         $scope.view = "api";
         $scope.tabMap[api.url+api.methods[0]] = {
@@ -353,16 +355,24 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.currentAPI = api;
         $scope.response = null;
 
-        $scope.request = {};
-        let apiParameters = $scope.currentAPI.apiParameters;
-        for(let i=0;i<apiParameters.length;i++){
-            $scope.request[apiParameters[i].name] = apiParameters[i].defaultValue;
-            if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
-                let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
-                $scope.request[apiParameters[i].name] = JSON.stringify(data,null,4);
+        $scope.api = $scope.getFromLocalStorage(api.url,{
+            "url":"",
+            "content":"",
+            "request":null
+        });
+        $scope.api.url = api.url;
+        if(null==$scope.api.request){
+            let request = {};
+            let apiParameters = $scope.currentAPI.apiParameters;
+            for(let i=0;i<apiParameters.length;i++){
+                request[apiParameters[i].name] = apiParameters[i].defaultValue;
+                if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
+                    let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
+                    request[apiParameters[i].name] = JSON.stringify(data,null,4);
+                }
             }
+            $scope.api.request = request;
         }
-        $scope.request = $scope.getFromLocalStorage($scope.currentAPI.url,$scope.request);
 
         $scope.currentAPI.hasCollect = false;
         for(let i=0;i<$scope.collectionList.length;i++){
@@ -404,7 +414,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                     return;
                 }
             }else{
-                let value = $scope.request[apiParameter.name];
+                let value = $scope.api.request[apiParameter.name];
                 if(apiParameter.required&&(typeof(value)=="undefined"||value==="")){
                     alert("请填写必填项:"+apiParameter.name);
                     return;
@@ -440,8 +450,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         for(let i=0;i<apiParameters.length;i++){
             let apiParameter = apiParameters[i];
             if(apiParameter.position==="path"){
-                operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.request[apiParameter.name]);
-                delete $scope.request[apiParameter.name];
+                operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.api.request[apiParameter.name]);
+                delete $scope.api.request[apiParameter.name];
             }
         }
         let method = $scope.currentAPI.methods[0];
@@ -452,20 +462,20 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         if(method==="POST"||method==="PUT"||method==="PATCH"){
             if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
                 let fd = new FormData();
-                for(let prop in $scope.request){
+                for(let prop in $scope.api.request){
                     if(null!=document.getElementById(prop)){
                         fd.append(prop,document.getElementById(prop).files[0]);
                     }else{
-                        fd.append(prop,$scope.request[prop]);
+                        fd.append(prop,$scope.api.request[prop]);
                     }
                 }
                 operation.data = fd;
             }else if($scope.currentAPI.contentType.indexOf("application/json")>=0){
                 for(let i=0;i<$scope.currentAPI.apiParameters.length;i++){
-                    operation.data = $scope.request[$scope.currentAPI.apiParameters[i].name];
+                    operation.data = $scope.api.request[$scope.currentAPI.apiParameters[i].name];
                 }
             }else{
-                let request = angular.copy($scope.request);
+                let request = angular.copy($scope.api.request);
                 let apiParameters = $scope.currentAPI.apiParameters;
                 operation.data = "";
                 //处理数组类型的参数
@@ -483,7 +493,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 operation.data += $httpParamSerializer(request);
             }
         }else{
-            operation.params = $scope.request;
+            operation.params = $scope.api.request;
         }
         operation.headers = {"Content-Type":$scope.currentAPI.contentType};
         if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
@@ -518,7 +528,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             let endTime = new Date().getTime();
             $scope.consumeTime = (endTime-startTime)+"ms";
             $scope.loading = false;
-            $scope.saveToLocalStorage($scope.currentAPI.url,$scope.request);
 
             if($scope.lastUsed.length>$scope.settings.lastUsedLength){
                 $scope.lastUsed.shift();
@@ -535,7 +544,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 $scope.lastUsed.unshift($scope.currentAPI);
                 let lastUsed = [];
                 for(let i=0;i<$scope.lastUsed.length;i++){
-                    console.log($scope.lastUsed[i]);
                     let historyName =  $scope.lastUsed[i].methods[0]+"_"+$scope.lastUsed[i].url;
                     lastUsed.push(historyName);
                 }
