@@ -343,6 +343,18 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $scope.$watch("api",function(newValue,oldValue){
         $scope.saveToLocalStorage(newValue.url,newValue);
     },true);
+    $scope.initializeRequest = function(){
+        let request = {};
+        let apiParameters = $scope.currentAPI.apiParameters;
+        for(let i=0;i<apiParameters.length;i++){
+            request[apiParameters[i].name] = apiParameters[i].defaultValue;
+            if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
+                let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
+                request[apiParameters[i].name] = JSON.stringify(data,null,4);
+            }
+        }
+        $scope.api.request = request;
+    };
     $scope.setCurrentAPI = function(api){
         $scope.view = "api";
         $scope.tabMap[api.url+api.methods[0]] = {
@@ -362,16 +374,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         });
         $scope.api.url = api.url;
         if(null==$scope.api.request){
-            let request = {};
-            let apiParameters = $scope.currentAPI.apiParameters;
-            for(let i=0;i<apiParameters.length;i++){
-                request[apiParameters[i].name] = apiParameters[i].defaultValue;
-                if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
-                    let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
-                    request[apiParameters[i].name] = JSON.stringify(data,null,4);
-                }
-            }
-            $scope.api.request = request;
+            $scope.initializeRequest();
         }
 
         $scope.currentAPI.hasCollect = false;
@@ -384,6 +387,40 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
         $location.hash("top");
         $anchorScroll();
+    };
+    $scope.saveAsParameter = function(){
+        let name = prompt("请输入名称");
+        if(null==name||name===""){
+            return;
+        }
+        if(null==$scope.api.parameters){
+            $scope.api.parameters = [];
+        }
+        //检查是否name重复
+        for(let i=0;i<$scope.api.parameters.length;i++){
+            if($scope.api.parameters[i].name===name){
+                if(confirm("该名称已存在,是否覆盖?")){
+                    $scope.api.parameters[i].request = $scope.api.request;
+                }
+                return;
+            }
+        }
+        $scope.api.parameters.push({"name":name,"request":angular.copy($scope.api.request)});
+    };
+    $scope.deleteParameter = function(parameter){
+        if(confirm("确认删除吗?")){
+            for(let i=0;i<$scope.api.parameters.length;i++){
+                if($scope.api.parameters[i].name==parameter.name){
+                    $scope.api.parameters.splice(i,1);
+                    break;
+                }
+            }
+            $scope.initializeRequest();
+        }
+    };
+    $scope.executeParameter = function(parameter){
+        $scope.api.request = angular.copy(parameter.request);
+        $scope.execute();
     };
 
     //计算请求耗费时间

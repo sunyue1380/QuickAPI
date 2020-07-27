@@ -267,6 +267,14 @@
 
                     <div class="columns box">
                         <label class="checkbox">
+                            <input type="checkbox" ng-model="settings.showTestView">
+                            显示接口测试界面
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" ng-model="settings.showAPIEntity">
+                            显示接口实体类信息
+                        </label>
+                        <label class="checkbox">
                             <input type="checkbox" ng-model="settings.showEntity">
                             显示实体类
                         </label>
@@ -330,7 +338,7 @@
                     <span class="tag is-info" ng-show="null!=currentAPI.since">{{currentAPI.since}}</span>
                 </div>
             </div>
-            <div class="columns is-gapless">
+            <div class="columns is-gapless" ng-show="settings.showTestView">
                 <textarea class="textarea" ng-model="api.content" rows="5" cols="50" placeholder="可在此输入接口测试需求信息等等"></textarea>
             </div>
             <div class="columns is-multiline">
@@ -373,8 +381,32 @@
                         </tr>
                         </tbody>
                     </table>
+                    <div ng-show="settings.showTestView">
+                        <div class="buttons">
+                            <button class="button is-info" ng-click="saveAsParameter();">另存为参数</button>
+                        </div>
+                        <table class="table is-striped is-narrow is-hoverable is-fullwidth" ng-show="api.parameters.length>0">
+                            <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="parameter in api.parameters track by parameter.name">
+                                <td>{{parameter.name}}</td>
+                                <td>
+                                    <div class="buttons">
+                                        <div class="button is-info" ng-class="{'is-loading':isLoading}" ng-click="executeParameter(parameter);">执行</div>
+                                        <div class="button is-danger" ng-click="deleteParameter(parameter);">删除</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="column is-12" ng-show="currentAPI.parameterEntityNameList.length>0">
+                <div class="column is-12" ng-show="settings.showAPIEntity&&currentAPI.parameterEntityNameList.length>0">
                     <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[parameterEntityName]" ng-repeat="parameterEntityName in currentAPI.parameterEntityNameList"></div>
                 </div>
                 <div class="column is-12" ng-show="currentAPI.apiExceptions.length>0">
@@ -452,8 +484,7 @@
                         <iframe id="iframe" style="width: 100%; height: 300px;"></iframe>
                     </div>
                     <h1 class="title" ng-show="currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
-                    <entity-table entity="apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></entity-table>
-                    <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></div>
+                    <div ng-include src="'/entityTable.html'" ng-show="settings.showAPIEntity" ng-init="entity=apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></div>
                 </div>
             </div>
         </div>
