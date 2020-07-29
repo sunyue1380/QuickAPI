@@ -262,6 +262,8 @@
                         <div class="buttons">
                             <div class="button is-info" ng-click="cleanHistory();">清空最近使用记录</div>
                             <div class="button is-info" ng-click="cleanCollectionList();">清空收藏记录列表</div>
+                            <div class="button is-info" ng-click="export();">导出数据</div>
+                            <div class="button is-info" ng-click="import();"> 导入数据</div>
                         </div>
                     </div>
 
@@ -308,7 +310,7 @@
         </div>
         <div ng-show="view=='api'">
             <h1 class="title">
-                {{currentAPI.name}}
+                <span style="cursor: pointer;" ng-click="shareInterface();">{{currentAPI.name}}</span>
                 <button class="button is-primary" ng-show="!currentAPI.hasCollect" ng-click="collect(currentAPI)">收藏</button>
                 <button class="button is-danger" ng-show="currentAPI.hasCollect" ng-click="cancelCollect(currentAPI);">取消收藏</button>
             </h1>
@@ -521,5 +523,6 @@
         </div>
     </div>
 </script>
+<textarea id="textarea" style="width: 1px;height: 1px;"></textarea>
 </body>
 </html>

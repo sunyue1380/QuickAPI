@@ -45,6 +45,12 @@ app.filter('since', function () {
 });
 
 app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
+    $scope.copyToClipBoard = function(value){
+        let e = document.getElementById("textarea");
+        e.value = value;
+        e.select();
+        document.execCommand("copy");
+    };
     $scope.offline = false;
     //判断访问协议
     if(location.protocol.indexOf("file:")>=0){
@@ -95,7 +101,13 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
      * */
     $scope.getFromLocalStorage = function(key,defaultValue){
         if(null!=localStorage.getItem(location.origin+location.pathname+"_"+key)){
-            return JSON.parse(localStorage.getItem(location.origin+location.pathname+"_"+key));
+            let value = JSON.parse(localStorage.getItem(location.origin+location.pathname+"_"+key));
+            if(key=="#collectionList#"||key=="#lastUsed#") {
+                for (let i = 0; i < value.length; i++) {
+                    value[i] = $scope.getAPI(value[i]);
+                }
+            }
+            return value;
         }
         return defaultValue;
     };
@@ -104,8 +116,46 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
      * */
     $scope.saveToLocalStorage = function(key,value){
         if(typeof(value)!="undefined"&&null!=value){
+            if(key==="#collectionList#"||key==="#lastUsed#"){
+                value = angular.copy(value);
+                for(let i=0;i<value.length;i++){
+                    value[i] = value[i].methods[0]+"_"+value[i].url;
+                }
+            }
             localStorage.setItem(location.origin+location.pathname+"_"+key,JSON.stringify(value));
         }
+    };
+
+    $scope.export = function(){
+        let data = {};
+        let prefix = location.origin+location.pathname+"_";
+        for(let i=0;i<localStorage.length;i++){
+            let key = localStorage.key(i);
+            let index = key.indexOf(prefix);
+            if(index>=0){
+                data[key.substring(index+prefix.length)] = localStorage.getItem(key);
+            }
+        }
+        $scope.copyToClipBoard(JSON.stringify(data));
+        alert("数据已经复制到剪贴板!");
+    };
+
+    $scope.import = function(){
+        let value = prompt("请输入导入数据");
+        if(value==null||value==""){
+            return;
+        }
+        try {
+            let data = JSON.parse(value);
+            for(let prop in data){
+                localStorage.setItem(location.origin+location.pathname+"_"+prop,data[prop]);
+            }
+            alert("数据导入成功!");
+        }catch (e) {
+            alert("数据导入失败!");
+            console.error(e);
+        }
+        location.reload();
     };
 
     //tab页设置
@@ -243,8 +293,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
     $scope.collect = function(api){
         $scope.collectionList.push(api);
-        api.hasCollect = true;
         $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
+        api.hasCollect = true;
     };
 
     $scope.cancelCollect = function(api){
@@ -260,10 +310,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
     //最近使用
     $scope.lastUsed = $scope.getFromLocalStorage("#lastUsed#",[]);
-    //处理历史使用记录
-    for(let i=0;i<$scope.lastUsed.length;i++){
-        $scope.lastUsed[i] = $scope.getAPI($scope.lastUsed[i]);
-    }
 
     $scope.cleanCollectionList = function(){
         if(confirm("确认清空收藏记录吗?")){
@@ -423,6 +469,16 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.execute();
     };
 
+    //处理search
+    if(location.search!=""){
+        let api = $scope.getAPI(location.search.substring(1));
+        $scope.setCurrentAPI(api);
+    }
+    $scope.shareInterface = function(){
+        $scope.copyToClipBoard(location.origin+location.pathname+"?"+$scope.currentAPI.methods[0]+"_"+$scope.currentAPI.url);
+        alert("分享链接已复制到剪贴板!");
+    };
+
     //计算请求耗费时间
     $scope.consumeTime = "";
     //Body显示样式
@@ -579,12 +635,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }
             if(!exist){
                 $scope.lastUsed.unshift($scope.currentAPI);
-                let lastUsed = [];
-                for(let i=0;i<$scope.lastUsed.length;i++){
-                    let historyName =  $scope.lastUsed[i].methods[0]+"_"+$scope.lastUsed[i].url;
-                    lastUsed.push(historyName);
-                }
-                $scope.saveToLocalStorage("#lastUsed#",lastUsed);
+                $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
             }
         });
     };
