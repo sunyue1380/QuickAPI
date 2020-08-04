@@ -557,7 +557,10 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 let fd = new FormData();
                 for(let prop in $scope.api.request){
                     if(null!=document.getElementById(prop)){
-                        fd.append(prop,document.getElementById(prop).files[0]);
+                        let files = document.getElementById(prop).files;
+                        for(let i=0;i<files.length;i++){
+                            fd.append(prop,files[i]);
+                        }
                     }else{
                         fd.append(prop,$scope.api.request[prop]);
                     }

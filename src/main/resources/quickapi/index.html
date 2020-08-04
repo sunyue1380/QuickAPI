@@ -377,7 +377,7 @@
                             <td>{{apiParameter.defaultValue}}</td>
                             <td ng-switch="apiParameter.requestType">
                                 <input class="input" ng-switch-when="text" type="text" ng-model="api.request[apiParameter.name]">
-                                <input class="input" ng-switch-when="file" type="file" id="{{apiParameter.name}}" ng-model="api.request[apiParameter.name]">
+                                <input class="input" ng-switch-when="file" type="file" id="{{apiParameter.name}}" ng-model="api.request[apiParameter.name]" multiple>
                                 <textarea ng-switch-when="textarea" class="textarea" ng-model="api.request[apiParameter.name]" rows="10" cols="30"></textarea>
                             </td>
                         </tr>
@@ -458,7 +458,7 @@
                         </ul>
                     </div>
                     <div ng-show="responseView.view=='raw'">
-                        <pre>{{responseJSON}}</pre>
+                        <textarea class="textarea" readonly cols="100" rows="20" ng-model="responseJSON"></textarea>
                     </div>
                     <div ng-show="response!=null&&responseView.view=='table'">
                         <table class="table is-striped is-narrow is-hoverable is-fullwidth">

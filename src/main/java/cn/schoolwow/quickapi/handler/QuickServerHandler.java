@@ -163,7 +163,8 @@ public class QuickServerHandler extends AbstractHandler{
                     apiParameter.position = "path";
                 }
             }
-            if(parameterType.getName().equals(MultipartFile.class.getName())){
+            if(parameterType.getName().equals(MultipartFile.class.getName())
+                    ||parameterType.getName().startsWith("[L")&&parameterType.getName().substring(2,parameterType.getName().length()-1).equals(MultipartFile.class.getName())){
                 apiParameter.setName(parameter.getName());
                 apiParameter.requestType = "file";
                 api.contentType = "multipart/form-data;";

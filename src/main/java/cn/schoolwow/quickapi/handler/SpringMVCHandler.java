@@ -201,14 +201,15 @@ public class SpringMVCHandler extends AbstractHandler{
                     apiParameter.position = "query";
                 }
             }
-            if(parameterType.getName().equals(MultipartFile.class.getName())){
+            if(parameterType.getName().equals(MultipartFile.class.getName())
+                    ||parameterType.getName().startsWith("[L")&&parameterType.getName().substring(2,parameterType.getName().length()-1).equals(MultipartFile.class.getName())){
                 apiParameter.requestType = "file";
                 api.contentType = "multipart/form-data;";
             }
             if(null==apiParameter.getName()||apiParameter.getName().isEmpty()){
                 apiParameter.setName(parameterNames[i]);
             }
-            apiParameter.type = parameters[i].getType().getName();
+            apiParameter.type = parameterType.getName();
             apiParameterList.add(apiParameter);
         }
         api.parameterEntityNameList = parameterEntityNameList;

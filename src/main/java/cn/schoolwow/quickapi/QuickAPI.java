@@ -10,6 +10,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -231,9 +232,6 @@ public class QuickAPI{
                         }
                     }
                 }
-                for(APIEntity apiEntity:apiDocument.apiEntityMap.values()){
-                    handler.handleEntity(apiEntity);
-                }
             }
             //统一处理参数
             for(APIController apiController:apiControllerList){
@@ -246,6 +244,14 @@ public class QuickAPI{
                             api.parameterEntityNameList.addAll(getRecycleEntity(apiParameter.entityType));
                         }
                     }
+                }
+            }
+            for(Handler handler:handlers){
+                if(!handler.exist()){
+                    continue;
+                }
+                for(APIEntity apiEntity:apiDocument.apiEntityMap.values()){
+                    handler.handleEntity(apiEntity);
                 }
             }
             apiDocument.apiControllerList = apiControllerList;
@@ -265,9 +271,18 @@ public class QuickAPI{
                                 apiParameter.type = apiField.className;
                                 apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
                                 apiParameter.required = apiField.required;
-                                if(apiParameter.type.startsWith("[L")||(apiParameter.type.contains("<"))){
-                                    apiParameter.requestType = "textarea";
-                                    apiParameter.setDescription(apiField.getDescription()+"(多个参数请使用英文逗号分隔)");
+                                if(apiParameter.type.startsWith("[L")){
+                                    if(apiParameter.type.contains("<")){
+                                        apiParameter.requestType = "textarea";
+                                        apiParameter.setDescription(apiField.getDescription()+"(多个参数请使用英文逗号分隔)");
+                                    }
+                                    String actualType = apiParameter.type.substring(2,apiParameter.type.length()-1);
+                                    if(actualType.equals(MultipartFile.class.getName())
+                                    ||actualType.equals(cn.schoolwow.quickserver.request.MultipartFile.class.getName())){
+                                        apiParameter.requestType = "file";
+                                        apiParameter.setDescription(apiField.getDescription());
+                                        api.contentType = "multipart/form-data;";
+                                    }
                                 }else{
                                     apiParameter.setDescription(apiField.getDescription());
                                 }
