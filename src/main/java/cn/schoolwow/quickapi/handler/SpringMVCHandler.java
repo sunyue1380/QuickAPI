@@ -177,7 +177,7 @@ public class SpringMVCHandler extends AbstractHandler{
                         apiParameter.required = true;
                     }
                     apiParameter.requestType = "file";
-                    api.contentType = "multipart/form-data;";
+                    api.contentType = "multipart/form-data";
                 }
             }
             //RequestBody
@@ -187,7 +187,7 @@ public class SpringMVCHandler extends AbstractHandler{
                     apiParameter.setName("requestBody");
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
-                    api.contentType = "application/json; charset=utf-8";
+                    api.contentType = "application/json";
                     parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
                 }
             }
@@ -204,7 +204,7 @@ public class SpringMVCHandler extends AbstractHandler{
             if(parameterType.getName().equals(MultipartFile.class.getName())
                     ||parameterType.getName().startsWith("[L")&&parameterType.getName().substring(2,parameterType.getName().length()-1).equals(MultipartFile.class.getName())){
                 apiParameter.requestType = "file";
-                api.contentType = "multipart/form-data;";
+                api.contentType = "multipart/form-data";
             }
             if(null==apiParameter.getName()||apiParameter.getName().isEmpty()){
                 apiParameter.setName(parameterNames[i]);

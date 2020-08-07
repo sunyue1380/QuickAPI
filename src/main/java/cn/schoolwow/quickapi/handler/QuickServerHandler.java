@@ -1,6 +1,9 @@
 package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.*;
+import cn.schoolwow.quickapi.domain.API;
+import cn.schoolwow.quickapi.domain.APIController;
+import cn.schoolwow.quickapi.domain.APIEntity;
+import cn.schoolwow.quickapi.domain.APIParameter;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickbeans.annotation.Component;
 import cn.schoolwow.quickserver.annotation.*;
@@ -12,8 +15,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-
-import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
 
 public class QuickServerHandler extends AbstractHandler{
 
@@ -141,7 +142,7 @@ public class QuickServerHandler extends AbstractHandler{
                     apiParameter.setName(requestPart.name());
                     apiParameter.required = requestPart.required();
                     apiParameter.requestType = "file";
-                    api.contentType = "multipart/form-data;";
+                    api.contentType = "multipart/form-data";
                 }
             }
             //RequestBody
@@ -151,7 +152,7 @@ public class QuickServerHandler extends AbstractHandler{
                     apiParameter.setName("requestBody");
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
-                    api.contentType = "application/json; charset=utf-8";
+                    api.contentType = "application/json";
                 }
             }
             //PathVaribale
@@ -167,7 +168,7 @@ public class QuickServerHandler extends AbstractHandler{
                     ||parameterType.getName().startsWith("[L")&&parameterType.getName().substring(2,parameterType.getName().length()-1).equals(MultipartFile.class.getName())){
                 apiParameter.setName(parameter.getName());
                 apiParameter.requestType = "file";
-                api.contentType = "multipart/form-data;";
+                api.contentType = "multipart/form-data";
             }
             if(null==apiParameter.getName()||apiParameter.getName().isEmpty()){
                 continue;
