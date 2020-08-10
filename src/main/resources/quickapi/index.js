@@ -63,8 +63,8 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
             let apiList = $scope.apiDocument.apiControllerList[i].apiList;
             for(let j=0;j<apiList.length;j++){
-                let historyName =  apiList[j].methods[0]+"_"+apiList[j].url;
-                if(historyName==name){
+                let historyName = apiList[j].methods[0]+"_"+apiList[j].url;
+                if(name.indexOf(historyName)>=0){
                     return apiList[j];
                 }
             }

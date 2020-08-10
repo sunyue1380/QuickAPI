@@ -3,8 +3,6 @@ package cn.schoolwow.quickapi.util;
 import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.handler.Handler;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,7 +168,7 @@ public class GeneratorUtil {
             if(!oldAPIControllerList.contains(newAPIController)){
                 List<API> newAPIList = newAPIController.apiList;
                 for(API api:newAPIList){
-                    apiHistory.addList.add(api.methods[0]+"_"+api.url);
+                    apiHistory.addList.add(api.methods[0]+"_"+api.url+"_"+api.getDescription());
                     logger.info("[新增接口]{} {} {}",api.getName(),api.methods[0],api.url);
                 }
                 continue;
@@ -182,14 +180,14 @@ public class GeneratorUtil {
                     for(API newAPI:newAPIList){
                         //判断是否新增
                         if(!oldAPIList.contains(newAPI)){
-                            apiHistory.addList.add(newAPI.methods[0]+"_"+newAPI.url);
+                            apiHistory.addList.add(newAPI.methods[0]+"_"+newAPI.url+"_"+newAPI.getDescription());
                             logger.info("[新增接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                             continue;
                         }
                         //判断是否变更
                         for(API oldAPI:oldAPIList){
                             if(newAPI.equals(oldAPI)&&!newAPI.apiParameters.equals(oldAPI.apiParameters)){
-                                apiHistory.modifyList.add(newAPI.methods[0]+"_"+newAPI.url);
+                                apiHistory.modifyList.add(newAPI.methods[0]+"_"+newAPI.url+"_"+newAPI.getDescription());
                                 logger.info("[变更接口]{} {} {}",newAPI.getName(),newAPI.methods[0],newAPI.url);
                                 break;
                             }
@@ -299,158 +297,5 @@ public class GeneratorUtil {
                 };break;
             }
         }
-    }
-
-    /**生成swagger.json文件*/
-    public static void generateSwagger() throws IOException {
-        JSONObject o = new JSONObject();
-        o.put("swagger","2.0");
-        o.put("info",JSON.parseObject("{\"title\":\""+ apiDocument.title+"\",\"version\":\"last\"}"));
-        o.put("basePath","/");
-        //添加tag
-        {
-            JSONArray tagArray = new JSONArray();
-            for(APIController apiController: apiDocument.apiControllerList){
-                tagArray.add(JSON.parseObject("{\"name\":\""+apiController.getName()+"\",\"description\":null}"));
-            }
-            o.put("tags",tagArray);
-        }
-        o.put("schemes",JSON.parseArray("[\"http\"]"));
-        //添加path
-        {
-            JSONObject paths = new JSONObject();
-            for(APIController apiController: apiDocument.apiControllerList){
-                for(API api:apiController.apiList){
-                    JSONObject p = new JSONObject();
-                    p.put("tags",JSON.parseArray("[\""+apiController.getName()+"\"]"));
-                    p.put("summary",api.getName());
-                    p.put("description",api.getDescription());
-                    //添加参数
-                    {
-                        JSONArray parameters = new JSONArray();
-                        for(APIParameter apiParameter:api.apiParameters){
-                            JSONObject q = new JSONObject();
-                            q.put("name",apiParameter.getName());
-                            q.put("in",apiParameter.position);
-                            q.put("required",apiParameter.required);
-                            if(null==apiParameter.getDescription()){
-                                q.put("description","");
-                            }else{
-                                q.put("description",apiParameter.getDescription()+("".equals(apiParameter.defaultValue)?"":",默认为"+apiParameter.defaultValue));
-                            }
-                            switch(apiParameter.requestType){
-                                case "text":{
-                                    q.put("type","string");
-                                }break;
-                                case "textarea":{
-                                    q.put("name","root");
-                                    p.put("consumes",JSON.parseArray("[\"application/json\"]"));
-                                    JSONObject schema = new JSONObject();
-                                    schema.put("$schema","http://json-schema.org/draft-04/schema#");
-                                    schema.put("type","object");
-                                    APIEntity apiEntity = apiDocument.apiEntityMap.get(apiParameter.type);
-                                    if(null!=apiEntity){
-                                        JSONObject fieldProperty = new JSONObject();
-                                        if(null!=apiEntity.apiFields){
-                                            for(APIField apiField:apiEntity.apiFields){
-                                                fieldProperty.put(apiField.name,JSON.parseObject("{\"type\":\"string\",\"description\":\""+apiField.getDescription()+"\"}"));
-                                            }
-                                        }
-                                        schema.put("properties",fieldProperty);
-                                    }
-                                    q.put("schema",schema);
-                                }break;
-                                case "file":{
-                                    q.put("in","formData");
-                                    q.put("type","file");
-                                    q.put("description","上传的文件");
-                                    p.put("consumes",JSON.parseArray("[\"multipart/form-data\"]"));
-                                }break;
-                            }
-                            parameters.add(q);
-                        }
-                        p.put("parameters",parameters);
-                    }
-                    p.put("responses",JSON.parseObject("{\"200\":{\"description\":\"successful operation\",\"schema\":{}}}"));
-                    paths.put(api.url,JSON.parseObject("{\""+api.methods[0].toLowerCase()+"\":"+p.toJSONString()+"}"));
-                }
-            }
-            o.put("paths",paths);
-        }
-        Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/swagger.json");
-        Files.createDirectories(path.getParent());
-        Files.write(path,o.toJSONString().getBytes());
-        logger.info("[生成swagger]路径:{}",path);
-    }
-
-    /**生成angularjs的service文件*/
-    public static void generateAngularJS() throws IOException {
-        StringBuilder builder = new StringBuilder();
-        for(APIController apiController:apiDocument.apiControllerList){
-            String name = apiController.getName().replace("Controller","Service");
-            name = name.toLowerCase().charAt(0)+name.substring(1);
-            builder.append("app.service(\"$"+name+"\",function($http,$httpParamSerializer){\n");
-            for(API api:apiController.apiList){
-                builder.append("\t/**"+(api.getName().startsWith("/")?api.getName().substring(1):api.getName())+"*/\n");
-                builder.append("\tthis."+api.method.getName()+" = function(");
-                if(!api.apiParameters.isEmpty()){
-                    for(APIParameter apiParameter:api.apiParameters){
-                        builder.append(apiParameter.getName()+",");
-                    }
-                    builder.deleteCharAt(builder.length()-1);
-                }
-                builder.append("){\n");
-                if("multipart/form-data".equals(api.contentType)){
-                    builder.append("\t\tlet fd = new FormData();\n");
-                    for(APIParameter apiParameter:api.apiParameters){
-                        if(apiParameter.type.startsWith("[L")){
-                            builder.append("\t\tfor(let i=0;i<"+apiParameter.getName()+".length;i++){\n");
-                            builder.append("\t\t\tfd.append(\""+apiParameter.getName()+"\","+apiParameter.getName()+"[i]);\n");
-                            builder.append("\t\t}\n");
-                        }else{
-                            builder.append("\t\tfd.append(\""+apiParameter.getName()+"\","+apiParameter.getName()+");\n");
-                        }
-                    }
-                }
-                builder.append("\t\treturn $http({\n");
-                builder.append("\t\t\turl:\""+api.url+"\",\n");
-                builder.append("\t\t\tmethod:\""+api.methods[0]+"\",\n");
-                if("multipart/form-data".equals(api.contentType)){
-                    builder.append("\t\t\tdata:fd,\n");
-                }else if("application/json".equals(api.contentType)){
-                    builder.append("\t\t\tdata:"+api.apiParameters.get(0).getName()+",\n");
-                }else{
-                    if("GET".equals(api.methods[0])||"DELETE".equals(api.methods[0])){
-                        builder.append("\t\t\tparams:{\n");
-                    }else{
-                        builder.append("\t\t\tdata:{\n");
-                    }
-                    for(APIParameter apiParameter:api.apiParameters){
-                        builder.append("\t\t\t\t\""+apiParameter.getName()+"\":"+apiParameter.getName()+",\n");
-                    }
-                    builder.append("\t\t\t},\n");
-                }
-                if("application/x-www-form-urlencoded".equals(api.contentType)){
-                    builder.append("\t\t\ttransformRequest: function (data) {\n");
-                    builder.append("\t\t\t\treturn $httpParamSerializer(data);\n");
-                    builder.append("\t\t\t},\n");
-                }
-                builder.append("\t\t\theaders:{\n");
-                if("multipart/form-data".equals(api.contentType)){
-                    api.contentType = "undefined";
-                }
-                builder.append("\t\t\t\t\"Content-Type\":\""+api.contentType+"\"\n");
-                builder.append("\t\t\t},\n");
-                builder.append("\t\t});\n");
-
-
-                builder.append("\t};\n");
-            }
-            builder.append("});\n");
-        }
-        Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/service.js");
-        Files.createDirectories(path.getParent());
-        Files.write(path,builder.toString().getBytes());
-        logger.info("[生成angularjs]路径:{}",path);
     }
 }

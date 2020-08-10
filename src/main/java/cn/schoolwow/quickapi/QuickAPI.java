@@ -163,16 +163,10 @@ public class QuickAPI{
         return this;
     }
 
-    /**处理apiDocument*/
-    public QuickAPI handle() {
-        GeneratorUtil.handleApiDocument();
-        return this;
-    }
-
     /**生成接口文档*/
     public QuickAPI generate() throws IOException {
         if(null==apiDocument.apiControllerList){
-            throw new IllegalArgumentException("请先调用handle()方法!");
+            GeneratorUtil.handleApiDocument();
         }
         GeneratorUtil.generateApi();
         return this;
@@ -181,17 +175,10 @@ public class QuickAPI{
     /**生成接口文档*/
     public QuickAPI plugin(QuickAPIPlugin... quickAPIPlugins) throws IOException {
         if(null==apiDocument.apiControllerList){
-            throw new IllegalArgumentException("请先调用handle()方法!");
+            GeneratorUtil.handleApiDocument();
         }
         for(QuickAPIPlugin quickAPIPlugin:quickAPIPlugins){
-            switch(quickAPIPlugin){
-                case SWAGGER:{
-                    GeneratorUtil.generateSwagger();
-                }break;
-                case ANGULAR_JS:{
-                    GeneratorUtil.generateAngularJS();
-                }break;
-            }
+            quickAPIPlugin.plugin.generate();
         }
         return this;
     }
@@ -215,7 +202,7 @@ public class QuickAPI{
      * */
     public void upload(String host, Proxy proxy) {
         if(null==apiDocument.apiControllerList){
-            throw new IllegalArgumentException("请先调用handle()方法!");
+            GeneratorUtil.handleApiDocument();
         }
         StringBuilder sb = new StringBuilder();
         Scanner scanner = null;
