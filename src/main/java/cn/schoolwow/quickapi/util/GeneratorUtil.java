@@ -291,7 +291,10 @@ public class GeneratorUtil {
                             String name = jarEntry.getName();
                             name = name.substring(name.indexOf("/"));
                             Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+name);
-                            Files.copy(inputStream,path);
+                            if(Files.notExists(path.getParent())){
+                                Files.createDirectories(path.getParent());
+                            }
+                            Files.copy(inputStream,path,StandardCopyOption.REPLACE_EXISTING);
                         }
                     }
                 };break;

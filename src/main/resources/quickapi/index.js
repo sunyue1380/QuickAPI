@@ -283,6 +283,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         "showEntity":true,
         "showLastUsed":true,
         "lastUsedLength":5,
+        "enableParameterCache":true,
     });
     $scope.$watch("settings",function(newValue,oldValue){
         $scope.saveToLocalStorage("#settings#",newValue);
@@ -413,11 +414,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.currentAPI = api;
         $scope.response = null;
 
-        $scope.api = $scope.getFromLocalStorage(api.url,{
+        $scope.api = {
             "url":"",
             "content":"",
             "request":null
-        });
+        };
+        if($scope.settings.enableParameterCache){
+            $scope.api = $scope.getFromLocalStorage(api.url,$scope.api);
+        }
         $scope.api.url = api.url;
         if(null==$scope.api.request){
             $scope.initializeRequest();

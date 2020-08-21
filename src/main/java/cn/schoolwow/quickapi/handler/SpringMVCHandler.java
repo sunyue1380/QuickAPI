@@ -184,7 +184,6 @@ public class SpringMVCHandler extends AbstractHandler{
             {
                 RequestBody requestBody = parameters[i].getAnnotation(RequestBody.class);
                 if(requestBody!=null){
-                    apiParameter.setName("requestBody");
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json";
@@ -210,7 +209,18 @@ public class SpringMVCHandler extends AbstractHandler{
                 apiParameter.setName(parameterNames[i]);
             }
             apiParameter.type = parameterType.getName();
-            apiParameterList.add(apiParameter);
+            boolean add = true;
+            Annotation[] annotations = parameters[i].getAnnotations();
+            for(Annotation annotation:annotations){
+                //如果出现了spring框架外的注解则跳过该参数的处理
+                if(!annotation.annotationType().getName().contains("org.springframework.")){
+                    add = false;
+                    break;
+                }
+            }
+            if(add){
+                apiParameterList.add(apiParameter);
+            }
         }
         api.parameterEntityNameList = parameterEntityNameList;
         api.apiParameters = apiParameterList;

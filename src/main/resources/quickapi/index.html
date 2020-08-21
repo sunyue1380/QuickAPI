@@ -106,7 +106,7 @@
                         <div class="tile is-vertical">
                             <div class="tile is-parent" ng-repeat="apiHistory in apiDocument.apiHistoryList">
                                 <div class="tile is-child" ng-show="apiHistory.addList.length>0||apiHistory.modifyList.length>0||apiHistory.deleteList.length>0">
-                                    <h1 class="title">{{apiHistory.updateTime | since}}</h1>
+                                    <h1 class="title" title="{{apiHistory.updateTime | date:'yyyy-MM-dd HH:mm:ss'}}">{{apiHistory.updateTime | since}}</h1>
                                     <table class="table is-fullwidth">
                                         <tr>
                                             <th>操作</th>
@@ -284,6 +284,10 @@
                             <input type="checkbox" ng-model="settings.showLastUsed">
                             显示最近使用历史记录
                         </label>
+                        <label class="checkbox">
+                            <input type="checkbox" ng-model="settings.enableParameterCache">
+                            启用参数缓存
+                        </label>
                     </div>
 
                     <div class="columns box is-multiline">
@@ -355,7 +359,7 @@
                         <tr>
                             <th>参数名</th>
                             <th>参数类型</th>
-                            <th>参数请求类型</th>
+                            <th>参数位置</th>
                             <th>描述</th>
                             <th>是否必须</th>
                             <th>默认值</th>
@@ -369,7 +373,7 @@
                         <tr ng-repeat="apiParameter in currentAPI.apiParameters">
                             <td>{{apiParameter.name}}</td>
                             <td>{{apiParameter.type}}</td>
-                            <td>{{apiParameter.requestType}}</td>
+                            <td>{{apiParameter.position}}</td>
                             <td ng-bind-html="apiParameter.description | trustAsHtml"></td>
                             <td ng-class="{true:'',false:'has-text-grey'}[apiParameter.required]">
                                 {{apiParameter.required}}
@@ -485,7 +489,7 @@
                     <div ng-show="responseView.view=='html'">
                         <iframe id="iframe" style="width: 100%; height: 300px;"></iframe>
                     </div>
-                    <h1 class="title" ng-show="currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
+                    <h1 class="title" ng-show="settings.showAPIEntity&&currentAPI.returnEntityNameList.length>0">返回实体类信息</h1>
                     <div ng-include src="'/entityTable.html'" ng-show="settings.showAPIEntity" ng-init="entity=apiDocument.apiEntityMap[returnEntityName]" ng-repeat="returnEntityName in currentAPI.returnEntityNameList"></div>
                 </div>
             </div>

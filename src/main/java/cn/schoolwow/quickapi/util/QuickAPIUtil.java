@@ -165,7 +165,7 @@ public class QuickAPIUtil {
         while (!apiEntityStack.isEmpty()) {
             className = apiEntityStack.pop();
             //匹配存在数组的情况
-            if(className.startsWith("[")){
+            if(className.startsWith("[")&&className.length()>2){
                 className = className.substring(2,className.length()-1);
             }
             if(QuickAPIUtil.needIgnoreClass(className)){
