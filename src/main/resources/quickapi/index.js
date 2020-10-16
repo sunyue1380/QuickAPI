@@ -125,7 +125,14 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             localStorage.setItem(location.origin+location.pathname+"_"+key,JSON.stringify(value));
         }
     };
-
+    /**
+     * 从本地存储中删除
+     * */
+    $scope.clearFromLocalStorage = function(key){
+        if(null!=localStorage.getItem(location.origin+location.pathname+"_"+key)){
+            localStorage.removeItem(location.origin+location.pathname+"_"+key);
+        }
+    };
     $scope.export = function(){
         let data = {};
         let prefix = location.origin+location.pathname+"_";
@@ -293,6 +300,15 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
     $scope.collectionList = $scope.getFromLocalStorage("#collectionList#",[]);
 
     $scope.collect = function(api){
+        let exist = $scope.collectionList.some(e=> {
+            if (api.url === e.url) {
+                return true;
+            }
+        });
+        if(exist){
+            return;
+        }
+
         $scope.collectionList.push(api);
         $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
         api.hasCollect = true;
@@ -437,6 +453,10 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
 
         $location.hash("top");
         $anchorScroll();
+    };
+    $scope.clearParameterCache = function(api){
+        $scope.clearFromLocalStorage(api.url);
+        $scope.initializeRequest();
     };
     $scope.saveAsParameter = function(){
         let name = prompt("请输入名称");
@@ -633,12 +653,13 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
                 $scope.lastUsed.shift();
             }
             //判断是否有重复
-            let exist = false;
-            for(let i=0;i<$scope.lastUsed.length;i++){
-                if($scope.lastUsed[i].url==$scope.currentAPI.url){
-                    exist = true;
-                    break;
+            let exist = $scope.lastUsed.some(e=> {
+                if (api.url === e.url) {
+                    return true;
                 }
+            });
+            if(exist){
+                return;
             }
             if(!exist){
                 $scope.lastUsed.unshift($scope.currentAPI);

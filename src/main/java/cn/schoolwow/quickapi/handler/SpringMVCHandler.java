@@ -212,7 +212,6 @@ public class SpringMVCHandler extends AbstractHandler{
             boolean add = true;
             Annotation[] annotations = parameters[i].getAnnotations();
             for(Annotation annotation:annotations){
-                //如果出现了spring框架外的注解则跳过该参数的处理
                 for(String packageName:QuickAPIConfig.controllerPackageNameList){
                     if(annotation.annotationType().getName().startsWith(packageName)){
                         add = false;

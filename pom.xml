@@ -71,7 +71,7 @@
         <dependency>
             <groupId>cn.schoolwow</groupId>
             <artifactId>QuickDAO</artifactId>
-            <version>3.0</version>
+            <version>3.5</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
