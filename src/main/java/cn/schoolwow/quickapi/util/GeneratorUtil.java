@@ -87,6 +87,7 @@ public class GeneratorUtil {
         for(APIController apiController:apiControllerList){
             for(API api:apiController.apiList){
                 api.url = QuickAPIConfig.prefix + api.url;
+                api.url = api.url.replace("//","/");
                 for(APIParameter apiParameter:api.apiParameters){
                     //获取实际类型
                     apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);

@@ -119,7 +119,9 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             if(key==="#collectionList#"||key==="#lastUsed#"){
                 value = angular.copy(value);
                 for(let i=0;i<value.length;i++){
-                    value[i] = value[i].methods[0]+"_"+value[i].url;
+                    if(value[i].methods&&value[i].methods[0]){
+                        value[i] = value[i].methods[0]+"_"+value[i].url;
+                    }
                 }
             }
             localStorage.setItem(location.origin+location.pathname+"_"+key,JSON.stringify(value));
@@ -493,6 +495,39 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         $scope.execute();
     };
 
+    /**初始化时执行*/
+    $scope.executeOnRefreshList = $scope.getFromLocalStorage("#executeOnRefreshList#",[]);
+    $scope.executeOnRefresh = function(parameter){
+        //判断是否有重复
+        let exist = $scope.executeOnRefreshList.some(e=> {
+            if (parameter.name === e.name) {
+                return true;
+            }
+        });
+        if(exist){
+            $scope.executeOnRefreshList.splice($scope.executeOnRefreshList.find(e => e.name===parameter.name),1);
+            return;
+        }
+        if(!exist){
+            $scope.api.request = angular.copy(parameter.request);
+
+            $scope.executeOnRefreshList.push({
+                "currentAPI":$scope.currentAPI,
+                "api":angular.copy(parameter),
+                "name":parameter.name
+            });
+            $scope.saveToLocalStorage("#executeOnRefreshList#",$scope.executeOnRefreshList);
+        }
+    };
+    $scope.existExecuteOnRefresh = function(name){
+        return $scope.executeOnRefreshList.some(e=> {
+            if (name === e.name) {
+                return true;
+            }
+        });
+    };
+
+
     //处理search
     if(location.search!=""){
         let api = $scope.getAPI(location.search.substring(1));
@@ -654,7 +689,7 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }
             //判断是否有重复
             let exist = $scope.lastUsed.some(e=> {
-                if (api.url === e.url) {
+                if (operation.url === e.url) {
                     return true;
                 }
             });
@@ -667,4 +702,97 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
             }
         });
     };
+    for(let i=0;i<$scope.executeOnRefreshList.length;i++){
+        let executeOnRefresh = $scope.executeOnRefreshList[i];
+
+        //设置访问url
+        let url = executeOnRefresh.currentAPI.url;
+        for(let i=0;i<$scope.environmentList.length;i++){
+            if($scope.environmentList[i].enable){
+                switch($scope.environmentList[i].mode){
+                    case "0":{
+                        //直连
+                        url = $rootScope.choosedEnvironment.host+url;
+                    }break;
+                    // case "1":{
+                    //     //中转
+                    //     url = "/api/proxy/forwardHttpRequest?proxyUrl="+$scope.environmentList[i].host+url;
+                    // }break;
+                    default:{
+                        alert("不支持的模式!mode:"+$scope.environmentList[i].mode);
+                    }break;
+                }
+                break;
+            }
+        }
+
+        let operation = {
+            url:url
+        };
+        //处理路径
+        for(let i=0;i<executeOnRefresh.currentAPI.apiParameters.length;i++){
+            let apiParameter = executeOnRefresh.currentAPI.apiParameters[i];
+            if(apiParameter.position==="path"){
+                operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.api.request[apiParameter.name]);
+                delete executeOnRefresh.api.request[apiParameter.name];
+            }
+        }
+        let method = executeOnRefresh.currentAPI.methods[0];
+        if(method==="all"){
+            method = "POST";
+        }
+        operation.method = method;
+        if(method==="POST"||method==="PUT"||method==="PATCH"){
+            if(executeOnRefresh.currentAPI.contentType.indexOf("multipart/form-data")>=0){
+                let fd = new FormData();
+                for(let prop in executeOnRefresh.api.request){
+                    if(null!=document.getElementById(prop)){
+                        let files = document.getElementById(prop).files;
+                        for(let i=0;i<files.length;i++){
+                            fd.append(prop,files[i]);
+                        }
+                    }else{
+                        fd.append(prop,executeOnRefresh.api.request[prop]);
+                    }
+                }
+                operation.data = fd;
+            }else if(executeOnRefresh.currentAPI.contentType.indexOf("application/json")>=0){
+                for(let i=0;i<executeOnRefresh.currentAPI.apiParameters.length;i++){
+                    operation.data = executeOnRefresh.api.request[executeOnRefresh.currentAPI.apiParameters[i].name];
+                }
+            }else{
+                let request = angular.copy(executeOnRefresh.api.request);
+                let apiParameters = executeOnRefresh.currentAPI.apiParameters;
+                operation.data = "";
+                //处理数组类型的参数
+                for(let i=0;i<apiParameters.length;i++){
+                    if(apiParameters[i].type.indexOf("[L")>=0||apiParameters[i].type.indexOf("<")>=0){
+                        if(request[apiParameters[i].name]){
+                            let values = request[apiParameters[i].name].split(",");
+                            for(let j=0;j<values.length;j++){
+                                operation.data += apiParameters[i].name + "=" + values[j]+"&";
+                            }
+                            delete request[apiParameters[i].name];
+                        }
+                    }
+                }
+                operation.data += $httpParamSerializer(request);
+            }
+        }else{
+            operation.params = executeOnRefresh.api.request;
+        }
+        operation.headers = {"Content-Type":executeOnRefresh.currentAPI.contentType};
+        if(executeOnRefresh.currentAPI.contentType.indexOf("multipart/form-data")>=0){
+            operation.headers = {"Content-Type":undefined};
+        }
+        for(let prop in $rootScope.headers){
+            operation.headers[prop] = $rootScope.headers[prop];
+        }
+        $http(operation).then(function(response){
+            $scope.response = response;
+            console.log(response);
+        },function(error){
+            console.log(error);
+        });
+    }
 });

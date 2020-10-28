@@ -124,15 +124,20 @@ public class QuickAPI{
      * @param libDirectory lib库位置
      * */
     public QuickAPI lib(String libDirectory) throws IOException {
-        Files.walkFileTree(Paths.get(libDirectory), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if(file.toFile().getName().endsWith(".jar")){
-                    classPath(file.toUri().toURL());
+        Path path = Paths.get(libDirectory);
+        if(Files.exists(path)&&Files.isDirectory(path)){
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if(file.toFile().getName().endsWith(".jar")){
+                        classPath(file.toUri().toURL());
+                    }
+                    return FileVisitResult.CONTINUE;
                 }
-                return FileVisitResult.CONTINUE;
-            }
-        });
+            });
+        }else{
+            logger.warn("[lib路径不存在]{}",libDirectory);
+        }
         return this;
     }
 

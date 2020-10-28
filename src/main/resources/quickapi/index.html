@@ -406,6 +406,9 @@
                                     <div class="buttons">
                                         <div class="button is-info" ng-class="{'is-loading':isLoading}" ng-click="executeParameter(parameter);">执行</div>
                                         <div class="button is-danger" ng-click="deleteParameter(parameter);">删除</div>
+                                        <div class="button" ng-class="{true:'is-danger',false:'is-info'}[existExecuteOnRefresh(parameter.name)]" ng-click="executeOnRefresh(parameter);">
+                                            {{existExecuteOnRefresh(parameter.name)?'取消刷新时执行':'开启刷新时执行'}}
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
