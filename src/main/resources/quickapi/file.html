@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="referrer" content="never">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="css/bulma.min.css" rel="stylesheet">
+    <link href="css/all.min.css" rel="stylesheet">
+    <title>接口文档-文件模式</title>
+</head>
+<body ng-app="app" ng-cloak class='ng-cloak'>
+<div class="columns is-multiline" ng-controller="fileController">
+    <div class="column is-2">
+        <h1 class="title">{{apiDocument.title}}</h1>
+        <h2 class="subtitle">
+            <span class="tag is-primary">{{apiDocument.date | date:'yyyy-MM-dd HH:mm:ss Z'}}</span>
+        </h2>
+        <div class="field">
+            <div class="control">
+                <input class="input is-primary" type="text" placeholder="请输入要查询的API" ng-model="searchText"
+                       ng-keypress="($event.which==13)?searchAPI():0">
+            </div>
+        </div>
+        <aside class="menu">
+            <ul class="menu-list">
+                <li><a ng-class="{'is-active':activeTabName=='/quickapi/history'}" ng-click="showHistory();">文档历史</a></li>
+            </ul>
+            <p class="menu-label">
+                实体类信息
+            </p>
+            <ul class="menu-list">
+                <li><a ng-class="{'is-active':activeTabName=='/quickapi/entity/'+val.className}"
+                       ng-repeat="(key,val) in apiDocument.apiEntityMap track by key" ng-click="setCurrentEntity(val);" ng-show="showEntity(key)">
+                    {{val.simpleName}}{{val.description==null||val.description==''?'':'('+val.description+')' | trustAsHtml}}</a>
+                </li>
+            </ul>
+            <p class="menu-label">
+                接口列表
+            </p>
+            <ul class="menu-list">
+                <li ng-repeat="apiController in apiDocument.apiControllerList | orderBy:'name'" ng-show="showApiController(apiController);" title="{{apiController.className}}">
+                    <a>
+                        <s ng-show="apiController.deprecated">{{apiController.name}}
+                            <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
+                        </s>
+                        <p ng-show="!apiController.deprecated">{{apiController.name}}
+                            <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
+                        </p>
+                    </a>
+                    <ul>
+                        <li ng-repeat="api in apiController.apiList | orderBy:'name'">
+                            <a ng-class="{'is-active':activeTabName==api.url+api.methods[0]}" ng-click="setCurrentAPI(api);" ng-show="showApi(apiController,api);">
+                                <s ng-show="api.deprecated">{{api.name}}</s>
+                                <span ng-show="!api.deprecated">{{api.name}}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+    <div class="column is-10">
+        <div class="tabs is-boxed is-large">
+            <ul>
+                <li ng-repeat="(key,val) in tabMap" ng-class="{'is-active':activeTabName==key}" ng-click="changeToTab(key);"><a>{{val.name}}<button class="delete is-small" ng-click="closeTab(key);"></button></a></li>
+            </ul>
+        </div>
+
+        <div ng-show="view=='history'">
+            <section class="section">
+                <div class="container">
+                    <h1 class="title">文档历史</h1>
+                    <h2 class="subtitle">
+                        接口列表的变化历史
+                    </h2>
+
+                    <div class="tile is-ancestor">
+                        <div class="tile is-vertical">
+                            <div class="tile is-parent" ng-repeat="apiHistory in apiDocument.apiHistoryList">
+                                <div class="tile is-child" ng-show="apiHistory.addList.length>0||apiHistory.modifyList.length>0||apiHistory.deleteList.length>0">
+                                    <h1 class="title" title="{{apiHistory.updateTime | date:'yyyy-MM-dd HH:mm:ss'}}">{{apiHistory.updateTime | since}}</h1>
+                                    <table class="table is-fullwidth">
+                                        <tr>
+                                            <th>操作</th>
+                                            <th>方法</th>
+                                            <th>地址</th>
+                                            <th>说明</th>
+                                            <th>查看</th>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.addList">
+                                            <td><span class="tag is-primary">新增</span></td>
+                                            <td>{{api.methods[0]}}</td>
+                                            <td>{{api.url}}</td>
+                                            <td ng-bind-html="api.description | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.modifyList">
+                                            <td><span class="tag is-warning">变更</span></td>
+                                            <td>{{api.methods[0]}}</td>
+                                            <td>{{api.url}}</td>
+                                            <td ng-bind-html="api.description | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                        <tr ng-repeat="api in apiHistory.deleteList">
+                                            <td><span class="tag is-danger">删除</span></td>
+                                            <td><s>{{api.methods[0]}}</s></td>
+                                            <td><s>{{api.url}}</s></td>
+                                            <td ng-bind-html="'<s>'+api.description+'</s>' | trustAsHtml"></td>
+                                            <td>
+                                                <button class="button is-info" ng-click="setCurrentAPI(api);">查看详情</button>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div ng-show="view=='entity'">
+            <div ng-include src="'/entityTable.html'"></div>
+        </div>
+        <div ng-show="view=='api'">
+            <h1 class="title">
+                <span>{{currentAPI.name}}</span>
+            </h1>
+            <article class="message is-danger" ng-show="currentAPI.deprecated">
+                <div class="message-body">
+                    请注意,该接口已被废弃!
+                </div>
+            </article>
+            <div class="columns is-gapless">
+                <div class="column is-1">
+                    <div class="tags">
+                        <span class="tag is-info" ng-repeat="method in currentAPI.methods">{{method}}</span>
+                    </div>
+                </div>
+                <div class="column is-11">
+                    <h5>{{currentAPI.url}}</h5>
+                </div>
+            </div>
+            <div class="columns is-gapless" ng-show="currentAPI.name!=currentAPI.description">
+                <div class="content">
+                    <p class="subtitle" ng-bind-html="currentAPI.description | trustAsHtml"></p>
+                </div>
+            </div>
+            <div class="columns is-gapless">
+                <div class="tags">
+                    <span class="tag is-info" ng-show="null!=currentAPI.author">{{currentAPI.author}}</span>
+                    <span class="tag is-info" ng-show="null!=currentAPI.since">{{currentAPI.since}}</span>
+                </div>
+            </div>
+            <div class="columns is-gapless" ng-show="settings.showTestView">
+                <textarea class="textarea" ng-model="api.content" rows="5" cols="50" placeholder="可在此输入接口测试需求信息等等"></textarea>
+            </div>
+            <div class="columns is-multiline">
+                <div class="column is-12">
+                    <h1 class="title">请求类型</h1>
+                    <span class="tag is-info is-large">{{currentAPI.contentType}}</span>
+                </div>
+                <div class="column is-12">
+                    <h1 class="title">请求参数</h1>
+                    <table class="table is-striped is-narrow is-hoverable is-fullwidth">
+                        <thead>
+                        <tr>
+                            <th>参数名</th>
+                            <th>参数类型</th>
+                            <th>参数位置</th>
+                            <th>描述</th>
+                            <th>是否必须</th>
+                            <th>默认值</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-show="currentAPI.apiParameters==null||currentAPI.apiParameters.length==0">
+                            <td colspan="7" class="text-center">当前请求不需要传递参数</td>
+                        </tr>
+                        <tr ng-repeat="apiParameter in currentAPI.apiParameters">
+                            <td>{{apiParameter.name}}</td>
+                            <td>{{apiParameter.type}}</td>
+                            <td>{{apiParameter.position}}</td>
+                            <td ng-bind-html="apiParameter.description | trustAsHtml"></td>
+                            <td ng-class="{true:'',false:'has-text-grey'}[apiParameter.required]">
+                                {{apiParameter.required}}
+                            </td>
+                            <td>{{apiParameter.defaultValue}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="column is-12">
+                    <div ng-include src="'/entityTable.html'" ng-init="entity=apiDocument.apiEntityMap[parameterEntityName]" ng-repeat="parameterEntityName in currentAPI.parameterEntityNameList"></div>
+                </div>
+                <div class="column is-12" ng-show="currentAPI.apiExceptions.length>0">
+                    <h1 class="title">异常信息</h1>
+                    <table class="table is-striped is-narrow is-hoverable is-fullwidth">
+                        <thead>
+                        <tr>
+                            <th>异常类</th>
+                            <th>说明</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="apiException in currentAPI.apiExceptions">
+                            <td>{{apiException.className}}</td>
+                            <td>{{apiException.description}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="column is-12">
+                    <h1 class="title">返回值</h1>
+                    <span class="tag is-info is-large">{{currentAPI.returnValue}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="js/angular.min.js"></script>
+<script src="api.js"></script>
+<script src="file.js"></script>
+<script type="text/ng-template" id="/entityTable.html">
+    <div class="columns">
+        <div class="column is-12">
+            <h1 class="title">{{entity.simpleName}}{{entity.description==null||entity.description==''?'':'('+entity.description+')' | trustAsHtml}}</h1>
+            <table class="table is-fullwidth is-large">
+                <thead>
+                <tr>
+                    <th>字段名</th>
+                    <th>字段类型</th>
+                    <th>描述</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><b>{{entity.simpleName}}</b></td>
+                    <td><b>{{entity.className}}</b></td>
+                    <td><b>{{entity.description}}</b></td>
+                </tr>
+                <tr ng-repeat="apiField in entity.apiFields">
+                    <td ng-bind="'&nbsp;&nbsp;'+apiField.name"></td>
+                    <td ng-bind="apiField.className"></td>
+                    <td ng-bind="apiField.description"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
+<textarea id="textarea" style="width: 1px;height: 1px;"></textarea>
+</body>
+</html>
