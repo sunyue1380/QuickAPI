@@ -1,0 +1,130 @@
+<section class="section" ng-controller="apiController">
+    <h1 class="title">
+        <span style="cursor: pointer;" ng-click="shareInterface();">{{api.name}}</span>
+        <button ng-repeat="button in topButtonList track by button.name" class="button" ng-class="button.class?button.class:'is-primary'" ng-click="button.click();">{{button.name}}</button>
+        <button class="button" ng-class="{true:'is-danger',false:'is-primary'}[apiStorage.collect]" ng-click="toggleCollect();">{{apiStorage.collect?'取消收藏':'收藏'}}</button>
+        <button class="button is-primary" ng-click="showAPIModal();">显示API信息</button>
+    </h1>
+
+    <textarea class="textarea" rows="5" cols="50" ng-show="showAPIParameterContent">{{::apiJSONString}}</textarea>
+    <article class="message is-danger" ng-show="api.deprecated">
+        <div class="message-body">
+            请注意,该接口已被废弃!
+        </div>
+    </article>
+    <div class="columns is-gapless">
+        <div class="column is-1">
+            <div class="tags">
+                <span class="tag is-info" ng-repeat="method in api.methods">{{method}}</span>
+            </div>
+        </div>
+        <div class="column is-11">
+            <h5>{{api.url}}</h5>
+        </div>
+    </div>
+    <div class="columns is-gapless" ng-show="api.name!=api.description">
+        <div class="content">
+            <p class="subtitle" ng-bind-html="api.description | trustAsHtml"></p>
+        </div>
+    </div>
+    <div class="columns is-gapless">
+        <div class="tags">
+            <span class="tag is-info" ng-show="null!=api.author">{{api.author}}</span>
+            <span class="tag is-info" ng-show="null!=api.since">{{api.since}}</span>
+        </div>
+    </div>
+    <div class="columns is-gapless" ng-show="storageService.settings.showTestView">
+        <textarea class="textarea" ng-model="apiStorage.content" rows="5" cols="50" placeholder="可在此输入接口测试需求信息等等"></textarea>
+    </div>
+    <div class="columns is-multiline">
+        <div class="column is-12">
+            <h1 class="title">请求类型</h1>
+            <span class="tag is-info is-large">{{api.contentType}}</span>
+        </div>
+        <div class="column is-12">
+            <h1 class="title">请求参数</h1>
+            <bulma-table fields="requestParameterFields" list="api.apiParameters" form-model="apiStorage.request" track="'name'"></bulma-table>
+
+        </div>
+        <div class="column is-12" ng-show="storageService.settings.showAPIEntity&&api.parameterEntityNameList.length>0">
+            <entity-table ng-repeat="parameterEntityName in api.parameterEntityNameList" entity="apiDocument.apiEntityMap[parameterEntityName]"></entity-table>
+        </div>
+        <div class="column is-12" ng-show="api.apiExceptions.length>0">
+            <h1 class="title">异常信息</h1>
+            <bulma-table fields="exceptionFields" list="api.apiExceptions" track="'className'"></bulma-table>
+        </div>
+        <div class="column is-12" ng-show="storageService.settings.showTestView">
+            <div class="buttons">
+                <button class="button is-info" ng-click="saveAsParameter();">另存为请求参数方案</button>
+                <button class="button is-link" ng-click="resetParameter();">重置请求参数</button>
+            </div>
+            <h1 class="title">请求参数方案列表</h1>
+            <bulma-table fields="saveParameterFields" list="apiStorage.saveParameterList" track="'name'"></bulma-table>
+        </div>
+        <div class="column is-12">
+            <h1 class="title">返回值</h1>
+            <span class="tag is-info is-large">{{api.returnValue}}</span>
+        </div>
+        <div class="column is-12">
+            <button class="button is-primary" ng-click="execute(api,apiStorage.request);">执行请求</button>
+        </div>
+        <div class="column is-12" ng-show="null!=response">
+            <h1 class="title">头部信息</h1>
+            <table class="table is-striped is-narrow is-hoverable is-fullwidth">
+                <tr>
+                    <td>耗时</td>
+                    <td><span class="tag is-info">{{consumeTime}}</span></td>
+                </tr>
+                <tr>
+                    <td>返回头</td>
+                    <td>
+                        <span class="tag" ng-class="{'is-success':response.status<400||response.status>500,'is-danger':response.status>=400&&response.status<600}">{{response.status}}</span>
+                    </td>
+                </tr>
+                <tr ng-repeat="(key,val) in response.config.headers">
+                    <td>{{key}}</td>
+                    <td>{{val}}</td>
+                </tr>
+            </table>
+            <h1 class="title">Body信息</h1>
+            <div class="tabs">
+                <ul>
+                    <li ng-class="{'is-active':responseView.view=='raw'}" ng-click="changeResponseView('raw');">
+                        <a>RAW</a></li>
+                    <li ng-class="{'is-active':responseView.view=='table'}" ng-click="changeResponseView('table');"><a>Table</a>
+                    </li>
+                    <li ng-class="{'is-active':responseView.view=='html'}" ng-click="changeResponseView('html');"><a>HTML</a>
+                    </li>
+                </ul>
+            </div>
+            <div ng-switch="responseView.view">
+                <textarea ng-switch-when="raw" class="textarea" readonly cols="100" rows="20" ng-model="responseJSON"></textarea>
+                <table ng-switch-when="table" class="table is-striped is-narrow is-hoverable is-fullwidth">
+                    <tbody ng-show="responseView.type=='object'">
+                        <tr>
+                            <th>属性</th>
+                            <th>值</th>
+                        </tr>
+                        <tr ng-repeat="key in responseView.keys">
+                            <td>{{key}}</td>
+                            <td>{{response.data[key]}}</td>
+                        </tr>
+                    </tbody>
+                    <tbody ng-show="responseView.type=='array'">
+                        <tr>
+                            <th ng-repeat="key in responseView.keys">{{key}}</th>
+                        </tr>
+                        <tr ng-repeat="o in response.data">
+                            <td ng-repeat="key in responseView.keys">{{o[key]}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <iframe ng-switch-when="html" id="iframe" style="width: 100%; height: 300px;"></iframe>
+            </div>
+            <h1 class="title" ng-show="storageService.settings.showAPIEntity&&api.returnEntityNameList.length>0">返回实体类信息</h1>
+            <entity-table ng-show="storageService.settings.showAPIEntity&&api.returnEntityNameList.length>0" ng-repeat="returnEntityName in api.returnEntityNameList" entity="apiDocument.apiEntityMap[returnEntityName]"></entity-table>
+        </div>
+    </div>
+
+    <form-modal fields="apiDataFields" data="apiData" option="apiDataOption"></form-modal>
+</section>

@@ -247,7 +247,7 @@ public class QuickAPIUtil {
                 apiField.name = fields[i].getName();
                 apiField.className = fields[i].getType().getName();
                 //处理泛型
-                java.lang.reflect.Type type = fields[i].getGenericType();
+                Type type = fields[i].getGenericType();
                 if (type instanceof java.lang.reflect.ParameterizedType) {
                     java.lang.reflect.ParameterizedType pType = (java.lang.reflect.ParameterizedType) type;
                     Type genericType = pType.getActualTypeArguments()[0];

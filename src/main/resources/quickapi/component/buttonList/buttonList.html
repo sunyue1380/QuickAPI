@@ -1,0 +1,5 @@
+<div class="columns box">
+    <div class="buttons">
+        <button ng-repeat="button in vm.buttons track by button.name" class="button" ng-show="button.show?button.show():true" ng-class="button.class?button.class:'is-primary'" ng-click="button.click();">{{button.name}}</button>
+    </div>
+</div>

@@ -1,0 +1,122 @@
+<div class="block"></div>
+<form name="form" novalidate ng-if="vm.type=='vertical'">
+    <div class="field" ng-repeat="field in vm.fields" ng-switch="field.type" ng-class="{'is-grouped':field.type=='buttons'}">
+        <label class="label" ng-class="{'checkbox':field.inputType=='checkbox'}"><span ng-show="field.required" class="has-text-danger">*</span>{{field.label}}</label>
+        <div ng-switch-when="input" class="control" ng-switch="field.inputType">
+            <label class="checkbox" ng-switch-when="checkbox">
+                <input type="checkbox" name="{{field.model}}" ng-model="$parent.vm.data[field.model]" ng-checked="$parent.vm.data[field.model]" ng-click="field.click($parent.vm.data,vm.data)">{{field.label}}
+            </label>
+            <label class="radio" ng-switch-when="radio">
+                <input type="radio" name="{{field.model}}" ng-repeat="option in field.options" ng-model="$parent.vm.data[field.model]" ng-click="option.click($parent.vm.data)">
+                {{option}}
+            </label>
+            <input type="{{field.inputType?field.inputType:'text'}}"
+                   placeholder="{{field.placeholder?field.placeholder:''}}" class="input"
+                   name="{{field.model}}"
+                   ng-model="$parent.vm.data[field.model]"
+                   ng-class="{'is-primary':form[field.model].$pristine,'is-success':form[field.model].$dirty&&form[field.model].$valid,'is-danger':form[field.model].$dirty&&form[field.model].$invalid}"
+                   ng-required="field.required"
+                   ng-minlength="field.minlength"
+                   ng-maxlength="field.maxlength"
+                   ng-pattern="field.pattern"
+                   ng-keypress="field.keypress?field.keypress($event,$parent.vm.data):0"
+                   ng-disabled="{{field.forbid}}" ng-switch-default>
+        </div>
+        <div ng-switch-when="textarea" class="control">
+            <textarea rows="5" cols="30" placeholder="{{field.placeholder?field.placeholder:''}}" class="textarea"
+                      name="{{field.model}}"
+                      ng-model="$parent.vm.data[field.model]"
+                      ng-class="{'is-primary':form[field.model].$pristine,'is-success':form[field.model].$dirty&&form[field.model].$valid,'is-danger':form[field.model].$dirty&&form[field.model].$invalid}"
+                      ng-required="field.required"
+                      ng-minlength="field.minlength"
+                      ng-maxlength="field.maxlength"
+                      ng-pattern="field.pattern"
+                      ng-keypress="field.keypress?field.keypress($event,$parent.vm.data):0"
+                      ng-disabled="{{field.forbid}}">
+                        </textarea>
+        </div>
+        <div ng-switch-when="select" class="control">
+            <div class="select is-expanded is-fullwidth" ng-class="field.class?field.class:''">
+                <select ng-model="$parent.vm.data[field.model]" ng-options="x as y for (x,y) in field.options"
+                        ng-change="field.change?field.change($parent.vm.data):0"></select>
+            </div>
+        </div>
+        <div ng-switch-when="buttons" class="control" ng-repeat="button in field.buttons track by button.name"
+             ng-show="button.show?button.show(data):true" ng-click="button.click($parent.vm.data);">
+            <a class="button" ng-class="{{button.class}}">
+                {{button.name}}
+            </a>
+        </div>
+        <p class="help is-danger" ng-show="form[field.model].$dirty&&form[field.model].$error.required">
+            此必填是必填字段
+        </p>
+        <p class="help is-danger" ng-show="form[field.model].$dirty&&form[field.model].$error.minlength">
+            {{field.label}}最小长度为{{field.minlength}}个字符
+        </p>
+        <p class="help is-danger" ng-show="form[field.model].$dirty&&form[field.model].$error.maxlength">
+            {{field.label}}最大长度为{{field.maxlength}}个字符
+        </p>
+    </div>
+</form>
+
+<form name="form" novalidate ng-if="vm.type=='horizontal'">
+    <div class="columns is-multiline">
+        <div class="column is-{{vm.col}}" ng-repeat="field in vm.fields track by field.label">
+            <div class="field is-horizontal">
+                <div class="field-label is-normal" style="margin-left: 10px;">
+                    <label class="label" ng-class="{'checkbox':field.inputType=='checkbox'}"><span ng-show="field.required" class="has-text-danger">*</span>{{field.label}}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field" ng-class="{'is-grouped':field.type=='buttons'}" ng-switch="field.type">
+                        <div ng-switch-when="input" class="control" ng-switch="field.inputType">
+                            <label class="checkbox" ng-switch-when="checkbox">
+                                <input type="checkbox" name="{{field.model}}" ng-model="$parent.vm.data[field.model]" ng-click="field.click($parent.vm.data)">{{field.label}}
+                            </label>
+                            <label class="radio" ng-switch-when="radio">
+                                <input type="radio" name="{{field.model}}" ng-model="$parent.vm.data[field.model]" ng-repeat="option in field.options" ng-click="option.click($parent.vm.data)">
+                                {{option}}
+                            </label>
+                            <input type="{{field.inputType?field.inputType:'text'}}"
+                                   placeholder="{{field.placeholder?field.placeholder:''}}" class="input"
+                                   name="{{field.model}}"
+                                   ng-model="$parent.vm.data[field.model]"
+                                   ng-class="{'is-primary':form[field.model].$pristine,'is-success':form[field.model].$dirty&&form[field.model].$valid,'is-danger':form[field.model].$dirty&&form[field.model].$invalid}"
+                                   ng-required="field.required"
+                                   ng-minlength="field.minlength"
+                                   ng-maxlength="field.maxlength"
+                                   ng-pattern="field.pattern"
+                                   ng-keypress="field.keypress?field.keypress($event,$parent.vm.data):0"
+                                   ng-disabled="field.forbid" ng-switch-default/>
+                        </div>
+                        <div ng-switch-when="textarea" class="control">
+                        <textarea rows="5" cols="30" placeholder="{{field.placeholder?field.placeholder:''}}" class="textarea"
+                                  name="{{field.model}}"
+                                  ng-model="$parent.vm.data[field.model]"
+                                  ng-class="{'is-primary':form[field.model].$pristine,'is-success':form[field.model].$dirty&&form[field.model].$valid,'is-danger':form[field.model].$dirty&&form[field.model].$invalid}"
+                                  ng-required="field.required"
+                                  ng-minlength="field.minlength"
+                                  ng-maxlength="field.maxlength"
+                                  ng-pattern="field.pattern"
+                                  ng-keypress="field.keypress?field.keypress($event,$parent.vm.data):0"
+                                  ng-disabled="field.forbid">
+                                </textarea>
+                        </div>
+                        <div ng-switch-when="select" class="control">
+                            <div class="select is-expanded is-fullwidth" ng-class="field.class?field.class:''">
+                                <select ng-model="$parent.vm.data[field.model]" ng-options="x as y for (x,y) in field.options"
+                                        ng-change="field.change?field.change($parent.vm.data):0" title="{{field.tips}}"></select>
+                            </div>
+                        </div>
+                        <div ng-switch-when="buttons" class="control"
+                             ng-repeat="button in field.buttons track by button.name"
+                             ng-show="button.show?button.show(data):true" ng-click="button.click($parent.vm.data);">
+                            <a class="button" ng-class="{{button.class}}">
+                                {{button.name}}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

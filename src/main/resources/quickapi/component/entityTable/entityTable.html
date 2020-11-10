@@ -1,0 +1,26 @@
+<div class="columns">
+    <div class="column is-12">
+        <h1 class="title">{{vm.entity.simpleName}}{{vm.entity.description?'('+vm.entity.description+')':'' | trustAsHtml}}</h1>
+        <table class="table is-fullwidth is-large">
+            <thead>
+            <tr>
+                <th>字段名</th>
+                <th>字段类型</th>
+                <th>描述</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><b>{{vm.entity.simpleName}}</b></td>
+                <td><b>{{vm.entity.className}}</b></td>
+                <td><b>{{vm.entity.description}}</b></td>
+            </tr>
+            <tr ng-repeat="apiField in vm.entity.apiFields">
+                <td ng-bind="'&nbsp;&nbsp;'+apiField.name"></td>
+                <td ng-bind="apiField.className"></td>
+                <td ng-bind="apiField.description"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

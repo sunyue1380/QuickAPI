@@ -1,0 +1,15 @@
+<div class="modal" ng-class="{'is-active':vm.option.show}">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">{{vm.option.title}}</p>
+            <button class="delete" ng-click="closeModal();" ng-show="vm.option.showDeleteButton?vm.option.showDeleteButton:true"></button>
+        </header>
+        <section class="modal-card-body">
+            <query fields="vm.fields" data="vm.data" type="'vertical'"></query>
+        </section>
+        <footer class="modal-card-foot is-pulled-right">
+            <button ng-repeat="button in vm.option.buttons" class="button" ng-show="{{button.show}}" ng-class="button.class" ng-click="button.click(vm.data);">{{button.name}}</button>
+        </footer>
+    </div>
+</div>

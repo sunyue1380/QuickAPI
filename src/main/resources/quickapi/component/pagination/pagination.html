@@ -1,0 +1,50 @@
+<nav class="is-pulled-left is-flex" role="navigation">
+    <span style="padding-top:5px;">每页显示</span>
+    <div class="select">
+        <select ng-model="vm.pageVo.pageSize" ng-change="toPage(1)" convert-to-number>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+    <span style="padding-top:5px;">条记录</span>
+</nav>
+
+<nav class="pagination is-pulled-right" role="navigation" aria-label="pagination" ng-show="vm.pageVo.list.length>0">
+    <ul class="pagination-list">
+        <li>
+            <button class="pagination-link button is-primary" ng-click="toPage(1);">首页</button>
+        </li>
+        <li>
+            <button class="pagination-link button is-primary"
+                    ng-class="{true:'',false:'is-disabled'}[(vm.pageVo.currentPage-1)>0]"
+                    ng-click="toPage(vm.pageVo.currentPage-1);">上一页
+            </button>
+        </li>
+        <li>
+            <a class="pagination-link" ng-bind="vm.pageVo.currentPage+'/'+vm.pageVo.totalPage"></a>
+        </li>
+        <li>
+            <span>跳转到第</span>
+        </li>
+        <li>
+            <input class="from-control input" style="width: 40px;" type="text" ng-model="pageNumber">
+        </li>
+        <li>
+            <span>页</span>
+        </li>
+        <li>
+            <button class="pagination-link button is-primary" ng-click="toPage();">跳转</button>
+        </li>
+        <li>
+            <button class="pagination-link button is-primary"
+                    ng-class="{true:'',false:'is-disabled'}[(vm.pageVo.currentPage+1)<=vm.pageVo.totalPage]"
+                    ng-click="toPage(vm.pageVo.currentPage+1);">下一页
+            </button>
+        </li>
+        <li>
+            <button class="pagination-link button is-primary" ng-click="toPage(vm.pageVo.totalPage);">尾页</button>
+        </li>
+    </ul>
+</nav>

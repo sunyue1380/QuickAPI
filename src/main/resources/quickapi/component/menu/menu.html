@@ -1,0 +1,24 @@
+<aside class="menu">
+    <p class="menu-label" ng-repeat-start="menu in vm.menuList">
+        {{menu.label}}
+    </p>
+    <ul class="menu-list" ng-repeat-end>
+        <li ng-repeat="singleMenu in menu.list" ng-include="'menuTree'">
+        </li>
+    </ul>
+</aside>
+
+<script type="text/ng-template" id="menuTree">
+    <a ng-show="null!=singleMenu.url&&singleMenu.url!=''" href="{{singleMenu.url}}" target="_blank">{{singleMenu.name}}</a>
+    <a ng-show="null!=singleMenu.state&&singleMenu.state!=''" ng-click="goToPage(singleMenu);" ng-class="{'is-active':currentMenu==singleMenu.name}">{{singleMenu.name}}</a>
+    <a ng-show="singleMenu.click" ng-click="singleMenu.click();" ng-class="{'is-active':currentMenu==singleMenu.name}">{{singleMenu.name}}</a>
+    <a ng-if="singleMenu.label">
+        {{singleMenu.label}}
+    </a>
+    <ul ng-if="singleMenu.list">
+        <li ng-repeat="singleMenu in singleMenu.list" ng-include="'menuTree'">
+            <a ng-show="null!=singleMenu.url&&singleMenu.url!=''" href="{{singleMenu.url}}" target="_blank">{{singleMenu.name}}</a>
+            <a ng-show="null!=singleMenu.state&&singleMenu.state!=''" ng-click="goToPage(singleMenu);" ng-class="{'is-active':currentMenu==singleMenu.name}">{{singleMenu.name}}</a>
+        </li>
+    </ul>
+</script>

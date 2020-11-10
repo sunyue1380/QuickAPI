@@ -1,0 +1,36 @@
+<section class="section" ng-controller="settingController">
+    <div class="container">
+        <h1 class="title">全局头部</h1>
+        <h2 class="subtitle">
+            设置头部字段,这些头部字段将会在执行请求时添加到请求头.
+        </h2>
+        <query fields="addGlobalFields" data="globalHeader" type="'horizontal'" col="'3'"></query>
+        <div class="block"></div>
+        <bulma-table fields="globalHeaderFields" list="settings.globalHeaders" ng-show="settings.globalHeaders.length>0"></bulma-table>
+    </div>
+
+    <div class="block"></div>
+
+    <div class="container">
+        <h1 class="title">环境设置</h1>
+        <h2 class="subtitle">
+            指定请求发送的目标机器
+        </h2>
+        <query fields="addEnvironmentFields" data="environment" type="'horizontal'" col="'3'"></query>
+        <div class="block"></div>
+        <bulma-table fields="environmentFields" list="settings.environments" track="'name'" ng-show="settings.environments.length>0"></bulma-table>
+    </div>
+
+    <div class="block"></div>
+
+    <div class="container">
+        <h1 class="title">文档设置</h1>
+        <h2 class="subtitle">
+            文档设置项
+        </h2>
+
+        <button-list buttons="buttons"></button-list>
+        <div class="block"></div>
+        <button-list buttons="settingButtons"></button-list>
+    </div>
+</section>

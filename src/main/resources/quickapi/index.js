@@ -1,32 +1,107 @@
-let app = angular.module("app",[]);
+var app = angular.module("app", ["ui.router"]);
+//加载所有component
+let dependencies = [
+    "entityTable","buttonList","query","bulmaTable","menu","pagination","paginationTable","formModal"
+];
+for(let i=0;i<dependencies.length;i++){
+    dependencies[i] = "./component/"+dependencies[i]+"/"+dependencies[i]+".js";
+}
+$script(dependencies);
+
+app.config(function ($controllerProvider, $compileProvider, $filterProvider, $provide, $stateProvider, $urlRouterProvider) {
+    app.register = {
+        controller: $controllerProvider.register,
+        component: $compileProvider.component,
+        directive: $compileProvider.directive,
+        filter: $filterProvider.register,
+        factory: $provide.factory,
+        service: $provide.service
+    };
+
+    $urlRouterProvider.otherwise("/history");
+    $stateProvider.state("menu", {
+        url: "/{name}",
+        templateUrl: function ($stateParams) {
+            return "./app/" + $stateParams.name + "/" + $stateParams.name + ".html";
+        },
+        params: {
+            "name": null,
+            "api": null,
+            "entity": null,
+        },
+        resolve: {
+            load: function ($stateParams, $rootScope, $q) {
+                var jsUrl = "./app/" + $stateParams.name + "/" + $stateParams.name + ".js";
+                var deferred = $q.defer();
+                var dependencies = angular.copy(jsUrl);
+                $script(dependencies, function () {
+                    $rootScope.$apply(function () {
+                        deferred.resolve();
+                    });
+                });
+                switch($stateParams.name){
+                    case "history":{
+                        $rootScope.tabMap[$stateParams.name] = angular.copy($stateParams);
+                        $rootScope.tabMap[$stateParams.name]["tabName"]="文档历史";
+                    }break;
+                    case "setting":{
+                        $rootScope.tabMap[$stateParams.name] = angular.copy($stateParams);
+                        $rootScope.tabMap[$stateParams.name]["tabName"]="文档设置";
+                    }break;
+                    case "entity":{
+                        $rootScope.tabMap[$stateParams.name+"_"+$stateParams.entity.className] = angular.copy($stateParams);
+                        $rootScope.tabMap[$stateParams.name+"_"+$stateParams.entity.className]["tabName"]=$stateParams.entity.simpleName+($stateParams.entity.description?"("+$stateParams.entity.description+")":'');
+                    }break;
+                    case "api":{
+                        $rootScope.tabMap[$stateParams.name+"_"+$stateParams.api.name] = angular.copy($stateParams);
+                        $rootScope.tabMap[$stateParams.name+"_"+$stateParams.api.name]["tabName"]=$stateParams.api.name;
+                    }break;
+                    default:{}break;
+                }
+                $rootScope.currentViewName = $stateParams.name;
+                $rootScope.currentAPI = $stateParams.api;
+                $rootScope.currentEntity = $stateParams.entity;
+                return deferred.promise;
+            }
+        }
+    });
+});
+
 app.factory('formInterceptor', function ($q, $rootScope) {
     return {
         request: function (config) {
-            $rootScope.isLoading = true;
+            config.target = $rootScope.target;
+            angular.element(config.target).addClass("is-loading");
             return config;
         },
         requestError: function (err) {
             console.log(err);
-            $rootScope.isLoading = false;
+            angular.element(err.config.target).removeClass("is-loading");
         },
         response: function (res) {
-            $rootScope.isLoading = false;
+            angular.element(res.config.target).removeClass("is-loading");
             return res;
         },
         responseError: function (err) {
-            $rootScope.isLoading = false;
+            angular.element(err.config.target).removeClass("is-loading");
+            if(err.data&&err.data.message){
+                $rootScope.showErrorNotification(err.data.message);
+            }
             return $q.reject(err);
         }
     }
 });
+
 app.config(function ($httpProvider) {
     $httpProvider.interceptors.push('formInterceptor');
 });
+
 app.filter('trustAsHtml', function ($sce) {
     return function (value) {
         return $sce.trustAsHtml(value);
     };
 });
+
 app.filter('since', function () {
     return function (lastUpdateTime) {
         let duration = Math.floor((new Date().getTime() - lastUpdateTime) / 1000);
@@ -44,43 +119,63 @@ app.filter('since', function () {
     };
 });
 
-app.controller("indexController",function($scope,$rootScope,$http,$httpParamSerializer,$location,$anchorScroll){
-    $scope.copyToClipBoard = function(value){
-        let e = document.getElementById("textarea");
-        e.value = value;
-        e.select();
-        document.execCommand("copy");
-    };
-    $scope.offline = false;
-    //判断访问协议
-    if(location.protocol.indexOf("file:")>=0){
-        $scope.offline = true;
-    }
-    $scope.apiDocument = apiDocument;
+app.factory("$storageService",function(){
+    let storageService = {};
+    var storageServiceProxy = new Proxy(storageService,{
+        get : function(target,key,receive){
+            let storageKey = location.host+location.pathname;
+            let storageObject = JSON.parse(localStorage.hasOwnProperty(storageKey)?localStorage.getItem(storageKey):"{}");
+            return storageObject[key];
+        },
+        set : function(target,key,value,receive){
+            let storageKey = location.host+location.pathname;
+            let storageObject = JSON.parse(localStorage.hasOwnProperty(storageKey)?localStorage.getItem(storageKey):"{}");
+            storageObject[key] = value;
+            localStorage.setItem(storageKey,JSON.stringify(storageObject));
+        },
+        has : function(target, key){
+            let storageKey = location.host+location.pathname;
+            let storageObject = JSON.parse(localStorage.hasOwnProperty(storageKey)?localStorage.getItem(storageKey):"{}");
+            return storageObject.hasOwnProperty(key);
+        },
+        ownKeys : function(target){
+            let storageKey = location.host+location.pathname;
+            let storageObject = JSON.parse(localStorage.hasOwnProperty(storageKey)?localStorage.getItem(storageKey):"{}");
+            return Object.keys(storageObject);
+        }
+    });
+    return storageServiceProxy;
+});
 
-    /**name=api.methods[0]+'_'+api.url*/
-    $scope.getAPI = function(name){
-        for(let i=0;i<$scope.apiDocument.apiControllerList.length;i++){
-            let apiList = $scope.apiDocument.apiControllerList[i].apiList;
+app.run(function ($rootScope,$state,$storageService,$http) {
+    $rootScope.target = null;
+    document.addEventListener("click",function(event){
+        $rootScope.target = event.target;
+    },true);
+
+    $rootScope.apiDocument = apiDocument;
+    $rootScope.getAPI = function(name){
+        for(let i=0;i<$rootScope.apiDocument.apiControllerList.length;i++){
+            let apiList = $rootScope.apiDocument.apiControllerList[i].apiList;
             for(let j=0;j<apiList.length;j++){
-                let historyName = apiList[j].methods[0]+"_"+apiList[j].url;
-                if(name.indexOf(historyName)>=0){
+                let historyName = apiList[j].methods[0]+"_"+apiList[j].url+"_"+apiList[j].description;
+                if(name===historyName){
                     return apiList[j];
                 }
             }
         }
-        return "";
+        return null;
     };
 
     //处理历史变更记录
-    for(let i=0;i<$scope.apiDocument.apiHistoryList.length;i++){
-        let addList = $scope.apiDocument.apiHistoryList[i].addList;
-        let modifyList = $scope.apiDocument.apiHistoryList[i].modifyList;
+    for(let i=0;i<$rootScope.apiDocument.apiHistoryList.length;i++){
+        let addList = $rootScope.apiDocument.apiHistoryList[i].addList;
+        let modifyList = $rootScope.apiDocument.apiHistoryList[i].modifyList;
         for(let l=0;l<addList.length;l++){
-            addList[l] = $scope.getAPI(addList[l]);
+            addList[l] = $rootScope.getAPI(addList[l]);
         }
         for(let l=0;l<modifyList.length;l++){
-            modifyList[l] = $scope.getAPI(modifyList[l]);
+            modifyList[l] = $rootScope.getAPI(modifyList[l]);
         }
 
         //剔除已经不存在的接口
@@ -96,270 +191,108 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
     }
 
+    //tab标签页
+    $rootScope.tabMap = {};
+    $rootScope.changeToTab = function(key){
+        let val = $rootScope.tabMap[key];
+        $state.go("menu",$rootScope.tabMap[key]);
+    };
+    $rootScope.closeTab = function(key){
+        delete $rootScope.tabMap[key];
+    };
+
+    $rootScope.copyToClipBoard = function(value){
+        let e = document.getElementById("textarea");
+        e.value = value;
+        e.select();
+        document.execCommand("copy");
+    };
+
     /**
-     * 从本地存储中获取
+     * 刷新时执行请求
+     * @param api 请求api信息
+     * @param request 请求参数信息
      * */
-    $scope.getFromLocalStorage = function(key,defaultValue){
-        if(null!=localStorage.getItem(location.origin+location.pathname+"_"+key)){
-            let value = JSON.parse(localStorage.getItem(location.origin+location.pathname+"_"+key));
-            if(key=="#collectionList#"||key=="#lastUsed#") {
-                for (let i = 0; i < value.length; i++) {
-                    value[i] = $scope.getAPI(value[i]);
+    $rootScope.executeOnRefresh = function(api,request){
+        let operation = {
+            url:api.url
+        };
+        //处理PathVariable参数
+        for(let i=0;i<api.apiParameters.length;i++){
+            let apiParameter = api.apiParameters[i];
+            if(apiParameter.position==="path"){
+                operation.url = operation.url.replace("{"+apiParameter.name+"}",request[apiParameter.name]);
+                delete request[apiParameter.name];
+            }
+        }
+        //处理请求方法
+        let method = api.methods[0];
+        if(method==="all"){
+            method = "POST";
+        }
+        operation.method = method;
+        //处理Content-Type
+        if(method==="POST"||method==="PUT"||method==="PATCH"){
+            if(api.contentType.indexOf("multipart/form-data")>=0){
+                let fd = new FormData();
+                for(let prop in request){
+                    fd.append(prop,request[prop]);
                 }
-            }
-            return value;
-        }
-        return defaultValue;
-    };
-    /**
-     * 保存到本地存储
-     * */
-    $scope.saveToLocalStorage = function(key,value){
-        if(typeof(value)!="undefined"&&null!=value){
-            if(key==="#collectionList#"||key==="#lastUsed#"){
-                value = angular.copy(value);
-                for(let i=0;i<value.length;i++){
-                    if(value[i].methods&&value[i].methods[0]){
-                        value[i] = value[i].methods[0]+"_"+value[i].url;
-                    }
+                operation.data = fd;
+            }else if(api.contentType.indexOf("application/json")>=0){
+                for(let prop in request){
+                    operation.data = request[prop];
                 }
+            }else{
+                operation.data += $httpParamSerializer(request);
             }
-            localStorage.setItem(location.origin+location.pathname+"_"+key,JSON.stringify(value));
-        }
-    };
-    /**
-     * 从本地存储中删除
-     * */
-    $scope.clearFromLocalStorage = function(key){
-        if(null!=localStorage.getItem(location.origin+location.pathname+"_"+key)){
-            localStorage.removeItem(location.origin+location.pathname+"_"+key);
-        }
-    };
-    $scope.export = function(){
-        let data = {};
-        let prefix = location.origin+location.pathname+"_";
-        for(let i=0;i<localStorage.length;i++){
-            let key = localStorage.key(i);
-            let index = key.indexOf(prefix);
-            if(index>=0){
-                data[key.substring(index+prefix.length)] = localStorage.getItem(key);
-            }
-        }
-        $scope.copyToClipBoard(JSON.stringify(data));
-        alert("数据已经复制到剪贴板!");
-    };
-
-    $scope.import = function(){
-        let value = prompt("请输入导入数据");
-        if(value==null||value==""){
-            return;
-        }
-        try {
-            let data = JSON.parse(value);
-            for(let prop in data){
-                localStorage.setItem(location.origin+location.pathname+"_"+prop,data[prop]);
-            }
-            alert("数据导入成功!");
-        }catch (e) {
-            alert("数据导入失败!");
-            console.error(e);
-        }
-        location.reload();
-    };
-
-    //tab页设置
-    $scope.activeTabName = "/quickapi/history";
-    $scope.tabMap = {
-        "/quickapi/history":{
-            "name": "文档历史",
-            "view": "history"
-        }
-    };
-    $scope.changeToTab = function(key){
-        let val = $scope.tabMap[key];
-        $scope.view = val.view;
-        $scope.activeTabName = key;
-        switch($scope.view){
-            case "entity":{
-                $scope.entity = val.entity;
-                $scope.setCurrentEntity($scope.entity);
-            };break;
-            case "api":{
-                $scope.currentAPI = val.api;
-                $scope.setCurrentAPI($scope.currentAPI);
-            };break;
-        }
-    };
-    $scope.closeTab = function(key){
-        delete $scope.tabMap[key];
-    };
-
-    //文档历史
-    $scope.view = "history";
-    $scope.showHistory = function(){
-        $scope.view = "history";
-        $scope.tabMap["/quickapi/history"] = {
-            "name": "文档历史",
-            "view": "history"
-        };
-        $scope.activeTabName = "/quickapi/history";
-    };
-
-    //全局头部
-    $scope.showGlobalHeaders = function(){
-        $scope.view = "globalHeader";
-        $scope.tabMap["/quickapi/globalHeader"] = {
-            "name": "全局头部",
-            "view": "globalHeader"
-        };
-        $scope.activeTabName = "/quickapi/globalHeader";
-    };
-    $scope.headers = $scope.getFromLocalStorage("headers",{});
-    $scope.addHeader = function(){
-        if(typeof($scope.newHeaderKey)!="undefined"&&""!=$scope.newHeaderKey){
-            $scope.headers[$scope.newHeaderKey] = $scope.newHeaderValue;
-            $scope.newHeaderKey = "";
-            $scope.newHeaderValue = "";
-            $scope.saveToLocalStorage("headers",$scope.headers);
-        }
-    };
-    $scope.removeHeader = function(key){
-        delete $scope.headers[key];
-        $scope.saveToLocalStorage("headers",$scope.headers);
-    };
-
-    //环境设置
-    $scope.showEnvironment = function(){
-        $scope.view = "environment";
-        $scope.tabMap["/quickapi/environment"] = {
-            "name": "环境设置",
-            "view": "environment"
-        };
-        $scope.activeTabName = "/quickapi/environment";
-    };
-
-    $scope.environmentList = $scope.getFromLocalStorage("environmentList",[]);
-    $scope.toggleEnvironment = function($event,environment){
-        if($event.target.checked){
-            environment.enable = true;
         }else{
-            environment.enable = true;
+            operation.params = request;
         }
-        $scope.saveToLocalStorage("environmentList",$scope.environmentList);
-    };
-
-    $scope.newEnvironment = {
-        "host":"",
-        "mode":"0",
-        "enable":false
-    };
-    $scope.addEnvironment = function(){
-        if(null==$scope.newEnvironment.host||$scope.newEnvironment.host==""){
-            alert("远程地址不能为空!");
-            return;
+        operation.headers = {"Content-Type":api.contentType};
+        if(api.contentType.indexOf("multipart/form-data")>=0){
+            operation.headers = {"Content-Type":undefined};
         }
-        if($scope.newEnvironment.host.indexOf("http")!=0){
-            alert("远程地址需以http开头");
-            return;
+        //添加全局头部
+        for(let i=0;i<$storageService.settings.globalHeaders.length;i++){
+            let globalHeader = $storageService.settings.globalHeaders[i];
+            operation.headers[globalHeader.key] = globalHeader.value;
         }
-
-        $scope.environmentList.push($scope.newEnvironment);
-        $scope.newEnvironment = {
-            "host":"",
-            "mode":"0",
-            "enable":false
-        };
-        $scope.saveToLocalStorage("environmentList",$scope.environmentList);
-    };
-    $scope.removeEnvironment = function(index){
-        if(confirm("确定删除吗?")){
-            $scope.environmentList.splice(index,1);
-            $scope.saveToLocalStorage("environmentList",$scope.environmentList);
-        }
-    };
-
-    //环境设置
-    $scope.showSettings = function(){
-        $scope.view = "settings";
-        $scope.tabMap["/quickapi/settings"] = {
-            "name": "文档设置",
-            "view": "settings"
-        };
-        $scope.activeTabName = "/quickapi/settings";
-    };
-
-    $scope.settings = $scope.getFromLocalStorage("#settings#", {
-        "showEntity":true,
-        "showLastUsed":true,
-        "lastUsedLength":5,
-        "enableParameterCache":true,
-    });
-    $scope.$watch("settings",function(newValue,oldValue){
-        $scope.saveToLocalStorage("#settings#",newValue);
-    },true);
-
-    //收藏功能
-    $scope.collectionList = $scope.getFromLocalStorage("#collectionList#",[]);
-
-    $scope.collect = function(api){
-        let exist = $scope.collectionList.some(e=> {
-            if (api.url === e.url) {
-                return true;
-            }
+        $http(operation).then(function(response){
+            console.log(response);
+        },function(error){
+            console.log(error);
+        }).finally(function(){
         });
-        if(exist){
-            return;
-        }
-
-        $scope.collectionList.push(api);
-        $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
-        api.hasCollect = true;
     };
 
-    $scope.cancelCollect = function(api){
-        for(let i=0;i<$scope.collectionList.length;i++){
-            if($scope.collectionList[i]==api){
-                $scope.collectionList.splice(i,1);
-                break;
+    //刷新时执行
+    let keys = Object.getOwnPropertyNames($storageService).filter(x => x.indexOf("API_")==0);
+    for(let i=0;i<keys.length;i++){
+        let apiStorage = $storageService[keys[i]];
+        let saveParameterList = apiStorage.saveParameterList;
+        if(saveParameterList&&saveParameterList.length>0){
+            for(let j=0;j<saveParameterList.length;j++){
+                if(saveParameterList[j].executeOnRefresh){
+                    console.log("[刷新时执行]"+apiStorage.api.url+",name:"+saveParameterList[j].name);
+                    $rootScope.executeOnRefresh(apiStorage.api,saveParameterList[j].request);
+                }
             }
         }
-        api.hasCollect = false;
-        $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
-    };
+    }
 
-    //最近使用
-    $scope.lastUsed = $scope.getFromLocalStorage("#lastUsed#",[]);
+    if(null==$storageService.collectionList){
+        $storageService.collectionList = [];
+    }
+    $rootScope.collectionList = $storageService.collectionList;
+    if(null==$storageService.recentUsedList){
+        $storageService.recentUsedList = [];
+    }
+    $rootScope.recentUsedList = $storageService.recentUsedList;
+});
 
-    $scope.cleanCollectionList = function(){
-        if(confirm("确认清空收藏记录吗?")){
-            $scope.collectionList  = [];
-            $scope.saveToLocalStorage("#collectionList#",$scope.collectionList);
-        }
-    };
-
-    $scope.cleanHistory = function(){
-        if(confirm("确认清空历史记录吗?")){
-            $scope.lastUsed  = [];
-            $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
-        }
-    };
-
-    //实体类显示
-    $scope.setCurrentEntity = function(entity){
-        $scope.view = "entity";
-        $scope.tabMap["/quickapi/entity/"+entity.className] = {
-            "name": entity.simpleName,
-            "view": "entity",
-            "entity":entity
-        };
-        $scope.activeTabName = "/quickapi/entity/"+entity.className;
-
-        $scope.entity = entity;
-        $location.hash("top");
-        $anchorScroll();
-    };
-
-    //API搜索
+app.controller("menuController",function($scope,$rootScope,$state,$storageService){
+    //API搜索功能
     $scope.searchText = "";
     $scope.showEntity = function(className){
         if($scope.searchText===""){
@@ -367,7 +300,6 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         }
         return className.indexOf($scope.searchText)>=0;
     };
-
     //过滤APIController
     $scope.showApiController = function(apiController){
         if($scope.searchText===""){
@@ -398,401 +330,5 @@ app.controller("indexController",function($scope,$rootScope,$http,$httpParamSeri
         return false;
     };
 
-    //显示API详情
-    $scope.currentAPI = null;
-    $scope.api = {
-        "url":"",
-        "content":"",
-        "request":null
-    };
-    $scope.$watch("api",function(newValue,oldValue){
-        $scope.saveToLocalStorage(newValue.url,newValue);
-    },true);
-    $scope.initializeRequest = function(){
-        let request = {};
-        let apiParameters = $scope.currentAPI.apiParameters;
-        for(let i=0;i<apiParameters.length;i++){
-            request[apiParameters[i].name] = apiParameters[i].defaultValue;
-            if("textarea"==apiParameters[i].requestType&&$scope.apiDocument.apiEntityMap.hasOwnProperty(apiParameters[i].type)){
-                let data = JSON.parse($scope.apiDocument.apiEntityMap[apiParameters[i].type].instance);
-                request[apiParameters[i].name] = JSON.stringify(data,null,4);
-            }
-        }
-        $scope.api.request = request;
-    };
-    $scope.setCurrentAPI = function(api){
-        $scope.view = "api";
-        $scope.tabMap[api.url+api.methods[0]] = {
-            "name": api.name,
-            "view": "api",
-            "api": api
-        };
-        $scope.activeTabName = api.url+api.methods[0];
-
-        $scope.currentAPI = api;
-        $scope.response = null;
-
-        $scope.api = {
-            "url":"",
-            "content":"",
-            "request":null
-        };
-        if($scope.settings.enableParameterCache){
-            $scope.api = $scope.getFromLocalStorage(api.url,$scope.api);
-        }
-        $scope.api.url = api.url;
-        if(null==$scope.api.request){
-            $scope.initializeRequest();
-        }
-
-        $scope.currentAPI.hasCollect = false;
-        for(let i=0;i<$scope.collectionList.length;i++){
-            if($scope.collectionList[i]==api){
-                $scope.currentAPI.hasCollect = true;
-                break;
-            }
-        }
-
-        $location.hash("top");
-        $anchorScroll();
-    };
-    $scope.clearParameterCache = function(api){
-        $scope.clearFromLocalStorage(api.url);
-        $scope.initializeRequest();
-    };
-    $scope.saveAsParameter = function(){
-        let name = prompt("请输入名称");
-        if(null==name||name===""){
-            return;
-        }
-        if(null==$scope.api.parameters){
-            $scope.api.parameters = [];
-        }
-        //检查是否name重复
-        for(let i=0;i<$scope.api.parameters.length;i++){
-            if($scope.api.parameters[i].name===name){
-                if(confirm("该名称已存在,是否覆盖?")){
-                    $scope.api.parameters[i].request = $scope.api.request;
-                }
-                return;
-            }
-        }
-        $scope.api.parameters.push({"name":name,"request":angular.copy($scope.api.request)});
-    };
-    $scope.deleteParameter = function(parameter){
-        if(confirm("确认删除吗?")){
-            for(let i=0;i<$scope.api.parameters.length;i++){
-                if($scope.api.parameters[i].name==parameter.name){
-                    $scope.api.parameters.splice(i,1);
-                    break;
-                }
-            }
-            $scope.initializeRequest();
-        }
-    };
-    $scope.executeParameter = function(parameter){
-        $scope.api.request = angular.copy(parameter.request);
-        $scope.execute();
-    };
-
-    /**初始化时执行*/
-    $scope.executeOnRefreshList = $scope.getFromLocalStorage("#executeOnRefreshList#",[]);
-    $scope.executeOnRefresh = function(parameter){
-        //判断是否有重复
-        let exist = $scope.executeOnRefreshList.some(e=> {
-            if (parameter.name === e.name) {
-                return true;
-            }
-        });
-        if(exist){
-            $scope.executeOnRefreshList.splice($scope.executeOnRefreshList.find(e => e.name===parameter.name),1);
-            return;
-        }
-        if(!exist){
-            $scope.api.request = angular.copy(parameter.request);
-
-            $scope.executeOnRefreshList.push({
-                "currentAPI":$scope.currentAPI,
-                "api":angular.copy(parameter),
-                "name":parameter.name
-            });
-            $scope.saveToLocalStorage("#executeOnRefreshList#",$scope.executeOnRefreshList);
-        }
-    };
-    $scope.existExecuteOnRefresh = function(name){
-        return $scope.executeOnRefreshList.some(e=> {
-            if (name === e.name) {
-                return true;
-            }
-        });
-    };
-
-
-    //处理search
-    if(location.search!=""){
-        let api = $scope.getAPI(location.search.substring(1));
-        $scope.setCurrentAPI(api);
-    }
-    $scope.shareInterface = function(){
-        $scope.copyToClipBoard(location.origin+location.pathname+"?"+$scope.currentAPI.methods[0]+"_"+$scope.currentAPI.url);
-        alert("分享链接已复制到剪贴板!");
-    };
-
-    //计算请求耗费时间
-    $scope.consumeTime = "";
-    //Body显示样式
-    $scope.responseView = {
-        "view": "raw",
-        "type":"object",
-        "keys": []
-    };
-    $scope.changeResponseView = function(view){
-        $scope.responseView.view = view;
-    };
-    $scope.response = null;
-    let iframe = document.getElementById("iframe");
-    $scope.iframe = document.all ? iframe.contentWindow.document : iframe.contentDocument;
-    $scope.iframe.contentEditable = true;
-    $scope.iframe.designMode = 'on';
-    //执行请求
-    $scope.execute = function(){
-        //检查必填项
-        let apiParameters = $scope.currentAPI.apiParameters;
-        for(let i=0;i<apiParameters.length;i++){
-            let apiParameter = apiParameters[i];
-            if(apiParameter.requestType==="file"){
-                if(apiParameter.required&&document.getElementById(apiParameter.name).files.length===0){
-                    alert("请填写必填项:"+apiParameter.name);
-                    return;
-                }
-            }else{
-                let value = $scope.api.request[apiParameter.name];
-                if(apiParameter.required&&(typeof(value)=="undefined"||value==="")){
-                    alert("请填写必填项:"+apiParameter.name);
-                    return;
-                }
-            }
-        }
-
-        //设置访问url
-        let url = $scope.currentAPI.url;
-        for(let i=0;i<$scope.environmentList.length;i++){
-            if($scope.environmentList[i].enable){
-                switch($scope.environmentList[i].mode){
-                    case "0":{
-                        //直连
-                        url = $rootScope.choosedEnvironment.host+url;
-                    }break;
-                    // case "1":{
-                    //     //中转
-                    //     url = "/api/proxy/forwardHttpRequest?proxyUrl="+$scope.environmentList[i].host+url;
-                    // }break;
-                    default:{
-                        alert("不支持的模式!mode:"+$scope.environmentList[i].mode);
-                    }break;
-                }
-                break;
-            }
-        }
-
-        let operation = {
-            url:url
-        };
-        //处理路径
-        for(let i=0;i<apiParameters.length;i++){
-            let apiParameter = apiParameters[i];
-            if(apiParameter.position==="path"){
-                operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.api.request[apiParameter.name]);
-                delete $scope.api.request[apiParameter.name];
-            }
-        }
-        let method = $scope.currentAPI.methods[0];
-        if(method==="all"){
-            method = "POST";
-        }
-        operation.method = method;
-        if(method==="POST"||method==="PUT"||method==="PATCH"){
-            if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
-                let fd = new FormData();
-                for(let prop in $scope.api.request){
-                    if(null!=document.getElementById(prop)){
-                        let files = document.getElementById(prop).files;
-                        for(let i=0;i<files.length;i++){
-                            fd.append(prop,files[i]);
-                        }
-                    }else{
-                        fd.append(prop,$scope.api.request[prop]);
-                    }
-                }
-                operation.data = fd;
-            }else if($scope.currentAPI.contentType.indexOf("application/json")>=0){
-                for(let i=0;i<$scope.currentAPI.apiParameters.length;i++){
-                    operation.data = $scope.api.request[$scope.currentAPI.apiParameters[i].name];
-                }
-            }else{
-                let request = angular.copy($scope.api.request);
-                let apiParameters = $scope.currentAPI.apiParameters;
-                operation.data = "";
-                //处理数组类型的参数
-                for(let i=0;i<apiParameters.length;i++){
-                    if(apiParameters[i].type.indexOf("[L")>=0||apiParameters[i].type.indexOf("<")>=0){
-                        if(request[apiParameters[i].name]){
-                            let values = request[apiParameters[i].name].split(",");
-                            for(let j=0;j<values.length;j++){
-                                operation.data += apiParameters[i].name + "=" + values[j]+"&";
-                            }
-                            delete request[apiParameters[i].name];
-                        }
-                    }
-                }
-                operation.data += $httpParamSerializer(request);
-            }
-        }else{
-            operation.params = $scope.api.request;
-        }
-        operation.headers = {"Content-Type":$scope.currentAPI.contentType};
-        if($scope.currentAPI.contentType.indexOf("multipart/form-data")>=0){
-            operation.headers = {"Content-Type":undefined};
-        }
-        for(let prop in $rootScope.headers){
-            operation.headers[prop] = $rootScope.headers[prop];
-        }
-        $scope.loading = true;
-        let startTime = new Date().getTime();
-        $http(operation).then(function(response){
-            $scope.response = response;
-            $scope.responseJSON = JSON.stringify(response.data,null,4);
-            if(Object.prototype.toString.call(response.data)=='[object Object]'){
-                $scope.responseView.type = "object";
-                $scope.responseView.keys = Object.keys($scope.response.data);
-            }else if(Object.prototype.toString.call(response.data)=='[object Array]'){
-                $scope.responseView.type = "array";
-                $scope.responseView.keys = [];
-                if(response.data.length>0){
-                    $scope.responseView.keys = Object.keys($scope.response.data[0]);
-                }
-            }
-        },function(error){
-            $scope.response = error;
-            $scope.responseJSON = JSON.stringify(error.data,null,4);
-        }).finally(function(){
-            $scope.iframe.open();
-            $scope.iframe.write($scope.response.data);
-            $scope.iframe.close();
-
-            let endTime = new Date().getTime();
-            $scope.consumeTime = (endTime-startTime)+"ms";
-            $scope.loading = false;
-
-            if($scope.lastUsed.length>$scope.settings.lastUsedLength){
-                $scope.lastUsed.shift();
-            }
-            //判断是否有重复
-            let exist = $scope.lastUsed.some(e=> {
-                if (operation.url === e.url) {
-                    return true;
-                }
-            });
-            if(exist){
-                return;
-            }
-            if(!exist){
-                $scope.lastUsed.unshift($scope.currentAPI);
-                $scope.saveToLocalStorage("#lastUsed#",$scope.lastUsed);
-            }
-        });
-    };
-    for(let i=0;i<$scope.executeOnRefreshList.length;i++){
-        let executeOnRefresh = $scope.executeOnRefreshList[i];
-
-        //设置访问url
-        let url = executeOnRefresh.currentAPI.url;
-        for(let i=0;i<$scope.environmentList.length;i++){
-            if($scope.environmentList[i].enable){
-                switch($scope.environmentList[i].mode){
-                    case "0":{
-                        //直连
-                        url = $rootScope.choosedEnvironment.host+url;
-                    }break;
-                    // case "1":{
-                    //     //中转
-                    //     url = "/api/proxy/forwardHttpRequest?proxyUrl="+$scope.environmentList[i].host+url;
-                    // }break;
-                    default:{
-                        alert("不支持的模式!mode:"+$scope.environmentList[i].mode);
-                    }break;
-                }
-                break;
-            }
-        }
-
-        let operation = {
-            url:url
-        };
-        //处理路径
-        for(let i=0;i<executeOnRefresh.currentAPI.apiParameters.length;i++){
-            let apiParameter = executeOnRefresh.currentAPI.apiParameters[i];
-            if(apiParameter.position==="path"){
-                operation.url = operation.url.replace("{"+apiParameter.name+"}",$scope.api.request[apiParameter.name]);
-                delete executeOnRefresh.api.request[apiParameter.name];
-            }
-        }
-        let method = executeOnRefresh.currentAPI.methods[0];
-        if(method==="all"){
-            method = "POST";
-        }
-        operation.method = method;
-        if(method==="POST"||method==="PUT"||method==="PATCH"){
-            if(executeOnRefresh.currentAPI.contentType.indexOf("multipart/form-data")>=0){
-                let fd = new FormData();
-                for(let prop in executeOnRefresh.api.request){
-                    if(null!=document.getElementById(prop)){
-                        let files = document.getElementById(prop).files;
-                        for(let i=0;i<files.length;i++){
-                            fd.append(prop,files[i]);
-                        }
-                    }else{
-                        fd.append(prop,executeOnRefresh.api.request[prop]);
-                    }
-                }
-                operation.data = fd;
-            }else if(executeOnRefresh.currentAPI.contentType.indexOf("application/json")>=0){
-                for(let i=0;i<executeOnRefresh.currentAPI.apiParameters.length;i++){
-                    operation.data = executeOnRefresh.api.request[executeOnRefresh.currentAPI.apiParameters[i].name];
-                }
-            }else{
-                let request = angular.copy(executeOnRefresh.api.request);
-                let apiParameters = executeOnRefresh.currentAPI.apiParameters;
-                operation.data = "";
-                //处理数组类型的参数
-                for(let i=0;i<apiParameters.length;i++){
-                    if(apiParameters[i].type.indexOf("[L")>=0||apiParameters[i].type.indexOf("<")>=0){
-                        if(request[apiParameters[i].name]){
-                            let values = request[apiParameters[i].name].split(",");
-                            for(let j=0;j<values.length;j++){
-                                operation.data += apiParameters[i].name + "=" + values[j]+"&";
-                            }
-                            delete request[apiParameters[i].name];
-                        }
-                    }
-                }
-                operation.data += $httpParamSerializer(request);
-            }
-        }else{
-            operation.params = executeOnRefresh.api.request;
-        }
-        operation.headers = {"Content-Type":executeOnRefresh.currentAPI.contentType};
-        if(executeOnRefresh.currentAPI.contentType.indexOf("multipart/form-data")>=0){
-            operation.headers = {"Content-Type":undefined};
-        }
-        for(let prop in $rootScope.headers){
-            operation.headers[prop] = $rootScope.headers[prop];
-        }
-        $http(operation).then(function(response){
-            $scope.response = response;
-            console.log(response);
-        },function(error){
-            console.log(error);
-        });
-    }
+    $scope.storageService = $storageService;
 });

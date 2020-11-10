@@ -1,0 +1,28 @@
+<table class="table is-fullwidth">
+    <tr>
+        <th ng-repeat="field in vm.fields track by field.key">{{field.value}}</th>
+    </tr>
+    <tr ng-repeat="data in vm.list track by vm.track?data[vm.track]:$id(data)" ng-show="vm.list.length>0">
+        <td ng-repeat="field in vm.fields track by field.key" ng-switch="field.type">
+            <a ng-switch-when="a" href="{{field.href(data)}}" ng-click="field.click?field.click(data):0" target="{{field.target?field.target:''}}">{{data[field.key]}}</a>
+            <textarea readonly ng-switch-when="textarea" class="textarea is-primary" rows="{{field.rows?field.rows:5}}" cols="{{field.cols?field.cols:30}}" ng-bind="data[field.key]"></textarea>
+            <div ng-switch-when="tags" class="tags">
+                <span ng-repeat="tag in field.tags track by tag.name" class="tag" ng-show="tag.show?tag.show(data):true" ng-class="tag.class" ng-click="tag.click(data,$parent.$parent.$parent.$index);" title="{{tag.tips?tag.tips(data):''}}">{{tag.name}}</span>
+            </div>
+            <div ng-switch-when="buttons" class="buttons">
+                <button ng-repeat="button in field.buttons track by button.name" class="button" ng-show="button.show?button.show(data):true" ng-class="button.class" ng-click="button.click(data,$parent.$parent.$parent.$index);" title="{{button.tips?button.tips(data):''}}">
+                    {{button.name}}
+                </button>
+            </div>
+            <span ng-switch-when="format" ng-bind-html="field.formatter(data)" title="{{field.tips?field.tips(data):''}}">
+            </span>
+            <span ng-switch-when="form" ng-switch="field.formType(data)">
+                <input ng-switch-when="text" class="input" type="text" ng-model="vm.formModel[data[vm.track]]"/>
+                <input ng-switch-when="file" class="input" type="file" ng-model="vm.formModel[data[vm.track]]" select-ng-files multiple/>
+                <textarea ng-switch-when="textarea" class="textarea" rows="10" cols="30" ng-model="vm.formModel[data[vm.track]]"></textarea>
+            </span>
+            <span ng-switch-default title="{{field.tips?field.tips(data):''}}">{{data[field.key]}}</span>
+        </td>
+    </tr>
+    <tr ng-show="vm.list.length==0"><td colspan="{{vm.fields.length}}">当前列表暂无数据</td></tr>
+</table>
