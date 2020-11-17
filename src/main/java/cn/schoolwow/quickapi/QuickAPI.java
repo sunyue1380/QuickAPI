@@ -1,5 +1,7 @@
 package cn.schoolwow.quickapi;
 
+import cn.schoolwow.quickapi.domain.APIMicro;
+import cn.schoolwow.quickapi.domain.APIMicroService;
 import cn.schoolwow.quickapi.domain.QuickAPIPlugin;
 import cn.schoolwow.quickapi.util.GeneratorUtil;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
@@ -10,14 +12,13 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.Proxy;
 import java.net.URL;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.function.Predicate;
 
 import static cn.schoolwow.quickapi.util.QuickAPIConfig.apiDocument;
 
-public class QuickAPI{
+public class QuickAPI {
     private static Logger logger = LoggerFactory.getLogger(QuickAPI.class);
 
     public static QuickAPI newInstance(){
@@ -27,6 +28,96 @@ public class QuickAPI{
     private QuickAPI(){
     }
 
+    /**
+     * 扫描controller层
+     * @param packageName 扫描Controller包
+     * */
+    public QuickAPI controller(String packageName){
+        QuickAPIConfig.apiMicroService.controller(packageName);
+        return this;
+    }
+
+    /**
+     * 扫描controller层
+     * @param className 扫描单个Controller类
+     * */
+    public QuickAPI controllerClass(String className){
+        QuickAPIConfig.apiMicroService.controllerClass(className);
+        return this;
+    }
+
+    /**
+     * 接口路径前缀
+     * @param prefix 接口路径前缀(context-path)
+     * */
+    public QuickAPI prefix(String prefix){
+        QuickAPIConfig.apiMicroService.prefix(prefix);
+        return this;
+    }
+
+    /**
+     * Java源代码路径
+     * @param sourcePath 指定java源代码所在目录
+     * */
+    public QuickAPI sourcePath(String sourcePath){
+        QuickAPIConfig.apiMicroService.sourcePath(sourcePath);
+        return this;
+    }
+
+    /**
+     * Java类路径
+     * @param classPathURL 指定java类文件
+     * */
+    public QuickAPI classPath(URL classPathURL){
+        QuickAPIConfig.apiMicroService.classPath(classPathURL);
+        return this;
+    }
+
+    /**
+     * 扫描pom.xml获取相关依赖
+     * @param pomFilePath pom.xml路径
+     * */
+    public QuickAPI pom(String pomFilePath) {
+        QuickAPIConfig.apiMicroService.pom(pomFilePath);
+        return this;
+    }
+
+    /**
+     * 指定类库位置
+     * @param libDirectory lib库位置
+     * */
+    public QuickAPI lib(String libDirectory) throws IOException {
+        QuickAPIConfig.apiMicroService.lib(libDirectory);
+        return this;
+    }
+
+    /**
+     * 忽略包名
+     * @param ignorePackageName 要忽略的包名
+     * */
+    public QuickAPI ignorePackageName(String ignorePackageName){
+        QuickAPIConfig.apiMicroService.ignorePackageName(ignorePackageName);
+        return this;
+    }
+
+    /**
+     * 忽略类
+     * @param ignoreClassName 要忽略的类名
+     * */
+    public QuickAPI ignoreClass(String ignoreClassName){
+        QuickAPIConfig.apiMicroService.ignoreClass(ignoreClassName);
+        return this;
+    }
+
+    /**
+     * 扫描类过滤接口
+     * @param predicate 函数式接口 参数为类名
+     * */
+    public QuickAPI filter(Predicate<String> predicate){
+        QuickAPIConfig.apiMicroService.filter(predicate);
+        return this;
+    }
+    
     /**
      * 指定文档标题
      * @param title 指定接口文档标题(唯一标识)
@@ -42,39 +133,6 @@ public class QuickAPI{
     */
     public QuickAPI description(String description){
         apiDocument.description = description;
-        return this;
-    }
-
-    /**
-     * 扫描controller层
-     * @param packageName 扫描Controller包
-     * */
-    public QuickAPI controller(String packageName){
-        QuickAPIConfig.controllerPackageNameList.add(packageName);
-        return this;
-    }
-
-    /**
-     * 扫描controller层
-     * @param className 扫描单个Controller类
-     * */
-    public QuickAPI controllerClass(String className){
-        QuickAPIConfig.controllerClassNameList.add(className);
-        return this;
-    }
-
-    /**
-     * 接口路径前缀
-     * @param prefix 接口路径前缀(context-path)
-     * */
-    public QuickAPI prefix(String prefix){
-        if(null==prefix||prefix.isEmpty()){
-            return this;
-        }
-        if(!prefix.startsWith("/")){
-            prefix = "/"+prefix;
-        }
-        QuickAPIConfig.prefix = prefix;
         return this;
     }
 
@@ -97,74 +155,20 @@ public class QuickAPI{
     }
 
     /**
-     * Java源代码路径
-     * @param sourcePath 指定java源代码所在目录
+     * 添加一个微服务
      * */
-    public QuickAPI sourcePath(String sourcePath){
-        //判断文件目录是否存在
-        if(Files.notExists(Paths.get(sourcePath))){
-            logger.warn("[源文件路径不存在]路径:{}",sourcePath);
-            return this;
-        }
-        QuickAPIConfig.sourcePathBuilder.append(sourcePath+";");
-        return this;
+    public APIMicro apiMicro(){
+        APIMicroService apiMicro = new APIMicroService();
+        QuickAPIConfig.apiMicroServiceList.add(apiMicro);
+        return apiMicro;
     }
 
     /**
-     * Java类路径
-     * @param classPathURL 指定java类文件
+     * 添加一个微服务
+     * @param apiMicroServices 微服务列表
      * */
-    public QuickAPI classPath(URL classPathURL){
-        QuickAPIConfig.classPathList.add(classPathURL);
-        return this;
-    }
-
-    /**
-     * 指定类库位置
-     * @param libDirectory lib库位置
-     * */
-    public QuickAPI lib(String libDirectory) throws IOException {
-        Path path = Paths.get(libDirectory);
-        if(Files.exists(path)&&Files.isDirectory(path)){
-            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if(file.toFile().getName().endsWith(".jar")){
-                        classPath(file.toUri().toURL());
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }else{
-            logger.warn("[lib路径不存在]{}",libDirectory);
-        }
-        return this;
-    }
-
-    /**
-     * 忽略包名
-     * @param ignorePackageName 要忽略的包名
-     * */
-    public QuickAPI ignorePackageName(String ignorePackageName){
-        QuickAPIConfig.ignorePackageNameList.add(ignorePackageName);
-        return this;
-    }
-
-    /**
-     * 忽略类
-     * @param ignoreClassName 要忽略的类名
-     * */
-    public QuickAPI ignoreClass(String ignoreClassName){
-        QuickAPIConfig.ignoreClassList.add(ignoreClassName);
-        return this;
-    }
-
-    /**
-     * 扫描类过滤接口
-     * @param predicate 函数式接口 参数为类名
-     * */
-    public QuickAPI filter(Predicate<String> predicate){
-        QuickAPIConfig.predicate = predicate;
+    public QuickAPI apiMicro(APIMicroService... apiMicroServices){
+        QuickAPIConfig.apiMicroServiceList.addAll(Arrays.asList(apiMicroServices));
         return this;
     }
 

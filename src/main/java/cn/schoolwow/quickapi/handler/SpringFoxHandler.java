@@ -1,9 +1,6 @@
 package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIEntity;
-import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import springfox.documentation.annotations.ApiIgnore;
 
@@ -26,7 +23,7 @@ public class SpringFoxHandler extends AbstractHandler{
     }
 
     @Override
-    public APIController getApiController(Class clazz) {
+    public APIController getApiController(Class clazz, APIMicroService apiMicroService) {
         return null;
     }
 

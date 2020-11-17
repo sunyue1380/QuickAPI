@@ -1,9 +1,6 @@
 package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIEntity;
-import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickbeans.annotation.Component;
 import cn.schoolwow.quickserver.annotation.*;
@@ -34,7 +31,7 @@ public class QuickServerHandler extends AbstractHandler{
     }
 
     @Override
-    public APIController getApiController(Class clazz) {
+    public APIController getApiController(Class clazz, APIMicroService apiMicroService) {
         if(null==clazz.getAnnotation(Component.class)){
             return null;
         }
@@ -68,7 +65,7 @@ public class QuickServerHandler extends AbstractHandler{
         }
         for(API api:apiController.apiList){
             handleAPIParameter(api);
-            handleReturnValue(api);
+            handleReturnValue(api,apiMicroService);
         }
         return apiController;
     }

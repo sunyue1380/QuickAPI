@@ -1,4 +1,7 @@
-app.register.controller("apiController", function ($scope, $rootScope, $state, $storageService, $http) {
+app.register.controller("apiController", function ($scope, $rootScope, $state, $storageService, $http, $location, $anchorScroll) {
+    $location.hash("top");
+    $anchorScroll();
+
     $scope.api = $state.params.api;
 
     $scope.storageService = $storageService;
@@ -263,9 +266,17 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
         {
             for(let i=0;i<api.apiParameters.length;i++){
                 let apiParameter = api.apiParameters[i];
-                if(apiParameter.required&&(request[apiParameter.name]==null||request[apiParameter.name]==="")){
-                    alert("请填写必填项:"+apiParameter.name);
-                    return;
+                if(apiParameter.requestType==="file"){
+                    if(apiParameter.required&&document.getElementById(apiParameter.name).files.length===0){
+                        alert("请填写必填项:"+apiParameter.name);
+                        return;
+                    }
+                }else{
+                    let value = request[apiParameter.name];
+                    if(apiParameter.required&&(typeof(value)=="undefined"||value==="")){
+                        alert("请填写必填项:"+apiParameter.name);
+                        return;
+                    }
                 }
             }
         }
@@ -292,7 +303,14 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
             if(api.contentType.indexOf("multipart/form-data")>=0){
                 let fd = new FormData();
                 for(let prop in request){
-                    fd.append(prop,request[prop]);
+                    if(null!=document.getElementById(prop)){
+                        let files = document.getElementById(prop).files;
+                        for(let i=0;i<files.length;i++){
+                            fd.append(prop,files[i]);
+                        }
+                    }else{
+                        fd.append(prop,$scope.api.request[prop]);
+                    }
                 }
                 operation.data = fd;
             }else if(api.contentType.indexOf("application/json")>=0){

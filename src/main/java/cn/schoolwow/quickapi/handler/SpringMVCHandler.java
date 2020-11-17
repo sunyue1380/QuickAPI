@@ -1,9 +1,6 @@
 package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIEntity;
-import cn.schoolwow.quickapi.domain.APIParameter;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
@@ -39,7 +36,7 @@ public class SpringMVCHandler extends AbstractHandler{
     }
 
     @Override
-    public APIController getApiController(Class clazz) {
+    public APIController getApiController(Class clazz, APIMicroService apiMicroService) {
         //class必须要RestController或者Controller或者Component注解
         if(null==clazz.getAnnotation(Component.class)
                 &&null==clazz.getAnnotation(Controller.class)
@@ -85,8 +82,8 @@ public class SpringMVCHandler extends AbstractHandler{
             }
         }
         for(API api:apiController.apiList){
-            handleAPIParameter(api);
-            handleReturnValue(api);
+            handleAPIParameter(api,apiMicroService);
+            handleReturnValue(api,apiMicroService);
         }
         return apiController;
     }
@@ -106,7 +103,7 @@ public class SpringMVCHandler extends AbstractHandler{
 
     }
 
-    private void handleAPIParameter(API api){
+    private void handleAPIParameter(API api, APIMicroService apiMicroService){
         LocalVariableTableParameterNameDiscoverer u = new LocalVariableTableParameterNameDiscoverer();
         String[] parameterNames = u.getParameterNames(api.method);
         Parameter[] parameters = api.method.getParameters();
@@ -129,7 +126,7 @@ public class SpringMVCHandler extends AbstractHandler{
             if(type instanceof ParameterizedType){
                 ParameterizedType pType = (ParameterizedType)type;
                 Type genericType = pType.getActualTypeArguments()[0];
-                parameterEntityNameList.addAll(getRecycleEntity(genericType.getTypeName()));
+                parameterEntityNameList.addAll(getRecycleEntity(genericType.getTypeName(),apiMicroService));
             }
 
             APIParameter apiParameter = new APIParameter();
@@ -187,7 +184,7 @@ public class SpringMVCHandler extends AbstractHandler{
                     apiParameter.required = requestBody.required();
                     apiParameter.requestType = "textarea";
                     api.contentType = "application/json";
-                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName()));
+                    parameterEntityNameList.addAll(getRecycleEntity(parameterType.getName(),apiMicroService));
                 }
             }
             //PathVaribale
@@ -212,7 +209,7 @@ public class SpringMVCHandler extends AbstractHandler{
             boolean add = true;
             Annotation[] annotations = parameters[i].getAnnotations();
             for(Annotation annotation:annotations){
-                for(String packageName:QuickAPIConfig.controllerPackageNameList){
+                for(String packageName:apiMicroService.controllerPackageNameList){
                     if(annotation.annotationType().getName().startsWith(packageName)){
                         add = false;
                         break;

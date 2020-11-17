@@ -38,7 +38,7 @@
                 接口列表
             </p>
             <ul class="menu-list">
-                <li ng-repeat="apiController in apiDocument.apiControllerList | orderBy:'name'" ng-show="showApiController(apiController);" title="{{apiController.className}}">
+                <li ng-repeat="apiController in apiDocument.apiControllerList track by apiController.className | orderBy:'name'" ng-show="showApiController(apiController);" title="{{apiController.className}}">
                     <a>
                         <s ng-show="apiController.deprecated">{{apiController.name}}
                             <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
@@ -222,7 +222,7 @@
     </div>
 </div>
 <script src="js/angular.min.js"></script>
-<script src="api.js"></script>
+<script src="generateAPI.js"></script>
 <script src="file.js"></script>
 <script type="text/ng-template" id="/entityTable.html">
     <div class="columns">

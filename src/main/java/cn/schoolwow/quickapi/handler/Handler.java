@@ -3,6 +3,7 @@ package cn.schoolwow.quickapi.handler;
 import cn.schoolwow.quickapi.domain.API;
 import cn.schoolwow.quickapi.domain.APIController;
 import cn.schoolwow.quickapi.domain.APIEntity;
+import cn.schoolwow.quickapi.domain.APIMicroService;
 
 public interface Handler {
     /**环境是否存在*/
@@ -14,7 +15,7 @@ public interface Handler {
     /**获取控制器
      * @param clazz 类对象
      * */
-    APIController getApiController(Class clazz);
+    APIController getApiController(Class clazz, APIMicroService apiMicroService);
 
     /**
      * 处理控制器

@@ -42,12 +42,12 @@ public class QuickAPIUtil {
     }
 
     /**
-     * 扫描包
-     * @param packageNames 包名数组
+     * 扫描微服务包
+     * @param apiMicroService 微服务包
      * */
-    public static Set<String> scanPackage(String... packageNames){
+    public static Set<String> scanPackage(APIMicroService apiMicroService){
         Set<String> classNameSet = new HashSet<>();
-        for(String packageName:packageNames){
+        for(String packageName:apiMicroService.controllerPackageNameList){
             String packageNamePath = packageName.replace(".", "/");
             try {
                 Enumeration<URL> urlEnumeration = urlClassLoader.getResources(packageNamePath);
@@ -74,7 +74,7 @@ public class QuickAPIUtil {
                                         String path = f.getAbsolutePath().replace("\\", "/");
                                         int startIndex = path.indexOf(indexOfString);
                                         String className = path.substring(startIndex, path.length() - 6).replace("/", ".");
-                                        if(!shouldFilterClass(className)){
+                                        if(!shouldFilterClass(className,apiMicroService)){
                                             classNameSet.add(className);
                                         }
                                     }
@@ -94,7 +94,7 @@ public class QuickAPIUtil {
                                         String jarEntryName = jarEntry.getName();
                                         if (jarEntryName.contains(packageNamePath) && jarEntryName.endsWith(".class")) {
                                             String className = jarEntryName.substring(0, jarEntryName.lastIndexOf(".")).replaceAll("/", ".");
-                                            if(!shouldFilterClass(className)){
+                                            if(!shouldFilterClass(className,apiMicroService)){
                                                 classNameSet.add(className);
                                             }
                                         }
@@ -109,22 +109,15 @@ public class QuickAPIUtil {
                 e.printStackTrace();
             }
         }
-        classNameSet.addAll(QuickAPIConfig.controllerClassNameList);
+        classNameSet.addAll(apiMicroService.controllerClassNameList);
         return classNameSet;
-    }
-
-    /**
-     * 扫描控制器包
-     * */
-    public static Set<String> scanControllerPackage(){
-        return scanPackage(QuickAPIConfig.controllerPackageNameList.toArray(new String[0]));
     }
 
     /**
      * 是否需要过滤该类
      * @param className 类名
      * */
-    public static boolean needIgnoreClass(String className){
+    public static boolean needIgnoreClass(String className, APIMicroService apiMicroService){
         //排除基础类型
         if(className.startsWith("byte")
                 ||className.startsWith("boolean")
@@ -140,7 +133,7 @@ public class QuickAPIUtil {
         ){
             return true;
         }
-        for(String ignorePackageName: QuickAPIConfig.ignorePackageNameList){
+        for(String ignorePackageName: apiMicroService.ignorePackageNameList){
             if(className.startsWith(ignorePackageName)){
                 return true;
             }
@@ -152,7 +145,7 @@ public class QuickAPIUtil {
      * 递归获取实体类所有依赖
      * @param className 类名
      * */
-    public static Set<String> getRecycleEntity(String className) {
+    public static Set<String> getRecycleEntity(String className, APIMicroService apiMicroService) {
         Stack<String> apiEntityStack = new Stack<>();
         //匹配存在泛型的情况
         while(className.contains("<")){
@@ -168,7 +161,7 @@ public class QuickAPIUtil {
             if(className.startsWith("[")&&className.length()>2){
                 className = className.substring(2,className.length()-1);
             }
-            if(QuickAPIUtil.needIgnoreClass(className)){
+            if(QuickAPIUtil.needIgnoreClass(className, apiMicroService)){
                 continue;
             }
             Class clazz = null;
@@ -187,7 +180,7 @@ public class QuickAPIUtil {
             apiEntityMap.put(clazz.getName(), apiEntity);
             for (APIField apiField : apiEntity.apiFields) {
                 className = QuickAPIUtil.getEntityClassName(apiField.className);
-                if(QuickAPIUtil.needIgnoreClass(className)){
+                if(QuickAPIUtil.needIgnoreClass(className, apiMicroService)){
                     continue;
                 }
                 if (!apiEntityMap.containsKey(className)) {
@@ -269,11 +262,11 @@ public class QuickAPIUtil {
      * 匹配JavaDoc注释
      * @param classNameSet 控制器类名集合
      * */
-    public static void updateJavaDoc(Set<String> classNameSet){
+    public static void updateJavaDoc(Set<String> classNameSet, List<APIController> apiControllerList){
         //匹配控制器文档
         {
             ClassDoc[] classDocs = JavaDocReader.getJavaDoc(classNameSet);
-            for (APIController apiController : apiDocument.apiControllerList) {
+            for (APIController apiController : apiControllerList) {
                 for (ClassDoc classDoc : classDocs) {
                     //判断控制器类名是否匹配
                     if (!apiController.className.equals(classDoc.qualifiedName())) {
@@ -419,11 +412,11 @@ public class QuickAPIUtil {
      * 是否需要过滤该类
      * @param className 类名
      * */
-    private static boolean shouldFilterClass(String className){
+    private static boolean shouldFilterClass(String className, APIMicroService apiMicroService){
         //根据类过滤
-        if(!QuickAPIConfig.ignoreClassList.isEmpty()){
+        if(!apiMicroService.ignoreClassList.isEmpty()){
             //为保证忽略内部类,需要以下处理
-            for(String ignoreClassName:QuickAPIConfig.ignoreClassList){
+            for(String ignoreClassName:apiMicroService.ignoreClassList){
                 if(className.startsWith(ignoreClassName)){
                     logger.warn("[忽略类名]类名:{}!",className);
                     return true;
@@ -431,15 +424,15 @@ public class QuickAPIUtil {
             }
         }
         //根据包名过滤
-        if(!QuickAPIConfig.ignorePackageNameList.isEmpty()){
-            for(String ignorePackageName:QuickAPIConfig.ignorePackageNameList){
+        if(!apiMicroService.ignorePackageNameList.isEmpty()){
+            for(String ignorePackageName:apiMicroService.ignorePackageNameList){
                 if(className.contains(ignorePackageName)){
                     logger.warn("[忽略包名]包名:{}类名:{}",ignorePackageName,className);
                     return true;
                 }
             }
         }
-        if(null!=QuickAPIConfig.predicate&&QuickAPIConfig.predicate.test(className)){
+        if(null!=apiMicroService.predicate&&apiMicroService.predicate.test(className)){
             return true;
         }
         return false;

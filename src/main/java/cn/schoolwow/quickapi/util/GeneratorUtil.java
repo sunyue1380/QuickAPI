@@ -1,7 +1,8 @@
 package cn.schoolwow.quickapi.util;
 
 import cn.schoolwow.quickapi.domain.*;
-import cn.schoolwow.quickapi.handler.Handler;
+import cn.schoolwow.quickapi.handler.*;
+import cn.schoolwow.quickdao.domain.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
@@ -25,125 +26,118 @@ import static cn.schoolwow.quickapi.util.QuickAPIUtil.getRecycleEntity;
 public class GeneratorUtil {
     private static Logger logger = LoggerFactory.getLogger(GeneratorUtil.class);
     /**处理器*/
-    private static Handler[] handlers;
-    static{
-        //动态加载Handler类
-        Set<String> classNameSet = QuickAPIUtil.scanPackage("cn.schoolwow.quickapi.handler");
-        List<Handler> handlerList = new ArrayList<>();
-        for(String className:classNameSet){
-            if(className.equals("cn.schoolwow.quickapi.handler.AbstractHandler")||className.equals("cn.schoolwow.quickapi.handler.Handler")){
-                continue;
-            }
-            try {
-                handlerList.add((Handler) ClassLoader.getSystemClassLoader().loadClass(className).newInstance());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        handlers = handlerList.toArray(new Handler[0]);
-    }
+    private static Handler[] handlers = new Handler[]{
+            new QuickDAOHandler(),
+            new QuickServerHandler(),
+            new SpringFoxHandler(),
+            new SpringMVCHandler(),
+            new SwaggerHandler()
+    };
 
     /**处理生成ApiDocument*/
     public static void handleApiDocument(){
         QuickAPIUtil.initClassPath();
-        //扫描包
-        Set<String> classNameSet = QuickAPIUtil.scanControllerPackage();
-        List<APIController> apiControllerList = new ArrayList<>(classNameSet.size());
-        //获取所有的Controller
-        for(Handler handler:handlers){
-            if(handler.exist()&&handler.isControllerEnvironment()){
-                for(String className:classNameSet){
-                    try {
-                        Class clazz = urlClassLoader.loadClass(className);
-                        APIController apiController = handler.getApiController(clazz);
-                        if(null!=apiController){
-                            apiControllerList.add(apiController);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-        //处理所有非控制器环境
-        for(Handler handler:handlers){
-            if(!handler.exist()){
-                continue;
-            }
-            for(APIController apiController:apiControllerList){
-                handler.handleController(apiController);
-                if(null!=apiController.clazz.getAnnotation(Deprecated.class)){
-                    apiController.deprecated = true;
-                }
-                for(API api:apiController.apiList){
-                    handler.handleAPI(api);
-                    if(null!=api.method.getAnnotation(Deprecated.class)){
-                        api.deprecated = true;
-                    }
-                }
-            }
-        }
-        //统一处理参数
-        for(APIController apiController:apiControllerList){
-            for(API api:apiController.apiList){
-                api.url = QuickAPIConfig.prefix + api.url;
-                api.url = api.url.replace("//","/");
-                for(APIParameter apiParameter:api.apiParameters){
-                    //获取实际类型
-                    apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
-                    if(apiParameter.requestType.equals("text")&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType)){
-                        api.parameterEntityNameList.addAll(getRecycleEntity(apiParameter.entityType));
-                    }
-                }
-            }
-        }
-        for(Handler handler:handlers){
-            if(!handler.exist()){
-                continue;
-            }
-            for(APIEntity apiEntity:apiDocument.apiEntityMap.values()){
-                handler.handleEntity(apiEntity);
-            }
-        }
-        apiDocument.apiControllerList = apiControllerList;
-        QuickAPIUtil.updateJavaDoc(classNameSet);
-        for(APIController apiController:apiControllerList){
-            for(API api:apiController.apiList){
-                Iterator<APIParameter> iterator = api.apiParameters.iterator();
-                List<APIParameter> extraAPIParamterList = new ArrayList<>();
-                while(iterator.hasNext()){
-                    APIParameter apiParameter = iterator.next();
-                    if(apiParameter.requestType.equals("text")&&!apiParameter.parameter.getType().isPrimitive()&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType)){
-                        iterator.remove();
-                        APIEntity apiEntity = QuickAPIConfig.apiDocument.apiEntityMap.get(apiParameter.entityType);
-                        for(APIField apiField:apiEntity.apiFields){
-                            apiParameter = new APIParameter();
-                            apiParameter.setName(apiField.name);
-                            apiParameter.type = apiField.className;
-                            apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
-                            apiParameter.required = apiField.required;
-                            if(apiParameter.type.startsWith("[L")){
-                                if(apiParameter.type.contains("<")){
-                                    apiParameter.requestType = "textarea";
-                                    apiParameter.setDescription(apiField.getDescription()+"(多个参数请使用英文逗号分隔)");
-                                }
-                                String actualType = apiParameter.type.substring(2,apiParameter.type.length()-1);
-                                if(actualType.equals(MultipartFile.class.getName())
-                                        ||actualType.equals(cn.schoolwow.quickserver.request.MultipartFile.class.getName())){
-                                    apiParameter.requestType = "file";
-                                    apiParameter.setDescription(apiField.getDescription());
-                                    api.contentType = "multipart/form-data";
-                                }
-                            }else{
-                                apiParameter.setDescription(apiField.getDescription());
+        List<APIController> apiMicroControllerList = new ArrayList<>(128);
+        for(APIMicroService apiMicroService: QuickAPIConfig.apiMicroServiceList){
+            //获取所有的Controller
+            Set<String> classNameSet = QuickAPIUtil.scanPackage(apiMicroService);
+            List<APIController> apiControllerList = new ArrayList<>(classNameSet.size());
+            for(Handler handler:handlers){
+                if(handler.exist()&&handler.isControllerEnvironment()){
+                    for(String className:classNameSet){
+                        try {
+                            Class clazz = urlClassLoader.loadClass(className);
+                            APIController apiController = handler.getApiController(clazz,apiMicroService);
+                            if(null!=apiController){
+                                apiControllerList.add(apiController);
                             }
-                            extraAPIParamterList.add(apiParameter);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
                 }
-                api.apiParameters.addAll(extraAPIParamterList);
             }
+            //处理所有非控制器环境
+            for(Handler handler:handlers){
+                if(!handler.exist()){
+                    continue;
+                }
+                for(APIController apiController:apiControllerList){
+                    handler.handleController(apiController);
+                    if(null!=apiController.clazz.getAnnotation(Deprecated.class)){
+                        apiController.deprecated = true;
+                    }
+                    for(API api:apiController.apiList){
+                        handler.handleAPI(api);
+                        if(null!=api.method.getAnnotation(Deprecated.class)){
+                            api.deprecated = true;
+                        }
+                    }
+                }
+            }
+            //统一处理参数
+            for(APIController apiController:apiControllerList){
+                for(API api:apiController.apiList){
+                    api.url = apiMicroService.prefix + api.url;
+                    for(APIParameter apiParameter:api.apiParameters){
+                        //获取实际类型
+                        apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
+                        if(apiParameter.requestType.equals("text")&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType,apiMicroService)){
+                            api.parameterEntityNameList.addAll(getRecycleEntity(apiParameter.entityType,apiMicroService));
+                        }
+                    }
+                }
+            }
+            for(Handler handler:handlers){
+                if(!handler.exist()){
+                    continue;
+                }
+                for(APIEntity apiEntity:apiDocument.apiEntityMap.values()){
+                    handler.handleEntity(apiEntity);
+                }
+            }
+
+            QuickAPIUtil.updateJavaDoc(classNameSet,apiControllerList);
+            for(APIController apiController:apiControllerList){
+                for(API api:apiController.apiList){
+                    Iterator<APIParameter> iterator = api.apiParameters.iterator();
+                    List<APIParameter> extraAPIParamterList = new ArrayList<>();
+                    while(iterator.hasNext()){
+                        APIParameter apiParameter = iterator.next();
+                        if(apiParameter.requestType.equals("text")&&!apiParameter.parameter.getType().isPrimitive()&&!QuickAPIUtil.needIgnoreClass(apiParameter.entityType,apiMicroService)){
+                            iterator.remove();
+                            APIEntity apiEntity = QuickAPIConfig.apiDocument.apiEntityMap.get(apiParameter.entityType);
+                            for(APIField apiField:apiEntity.apiFields){
+                                apiParameter = new APIParameter();
+                                apiParameter.setName(apiField.name);
+                                apiParameter.type = apiField.className;
+                                apiParameter.entityType = QuickAPIUtil.getEntityClassName(apiParameter.type);
+                                apiParameter.required = apiField.required;
+                                if(apiParameter.type.startsWith("[L")){
+                                    if(apiParameter.type.contains("<")){
+                                        apiParameter.requestType = "textarea";
+                                        apiParameter.setDescription(apiField.getDescription()+"(多个参数请使用英文逗号分隔)");
+                                    }
+                                    String actualType = apiParameter.type.substring(2,apiParameter.type.length()-1);
+                                    if(actualType.equals(MultipartFile.class.getName())
+                                            ||actualType.equals(cn.schoolwow.quickserver.request.MultipartFile.class.getName())){
+                                        apiParameter.requestType = "file";
+                                        apiParameter.setDescription(apiField.getDescription());
+                                        api.contentType = "multipart/form-data";
+                                    }
+                                }else{
+                                    apiParameter.setDescription(apiField.getDescription());
+                                }
+                                extraAPIParamterList.add(apiParameter);
+                            }
+                        }
+                    }
+                    api.apiParameters.addAll(extraAPIParamterList);
+                }
+            }
+            apiMicroControllerList.addAll(apiControllerList);
         }
+        apiDocument.apiControllerList = apiMicroControllerList;
         //比较新旧json文件
         Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.js");
         if(Files.notExists(path)){
@@ -232,7 +226,7 @@ public class GeneratorUtil {
     public static void generateApi() throws IOException {
         //生成Api.js文件
         {
-            Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.js");
+            Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/generateAPI.js");
             String data = "let apiDocument = "+ JSON.toJSONString(apiDocument, SerializerFeature.DisableCircularReferenceDetect)+";";
             Files.createDirectories(path.getParent());
             Files.write(path,data.getBytes());
@@ -264,11 +258,11 @@ public class GeneratorUtil {
                         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                                 throws IOException
                         {
-                            if(file.toFile().getName().endsWith("api.js")){
+                            if(file.toFile().getName().endsWith("generateAPI.js")){
                                 return FileVisitResult.CONTINUE;
                             }
-                            Files.copy(file, target.resolve(file.subpath(sourceNameCount, file.getNameCount())),
-                                    StandardCopyOption.REPLACE_EXISTING);
+                            Path targetFilePath = target.resolve(file.subpath(sourceNameCount, file.getNameCount()));
+                            Files.copy(file, targetFilePath,StandardCopyOption.REPLACE_EXISTING);
                             return FileVisitResult.CONTINUE;
                         }
                     });
@@ -285,7 +279,7 @@ public class GeneratorUtil {
                                         jarEntry.getName().endsWith(".js")||
                                         jarEntry.getName().endsWith(".woff2")
                         ){
-                            if(jarEntry.getName().endsWith("api.js")){
+                            if(jarEntry.getName().endsWith("generateAPI.js")){
                                 continue;
                             }
                             InputStream inputStream = jarFile.getInputStream(jarEntry);

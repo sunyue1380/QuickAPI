@@ -18,7 +18,7 @@
             </span>
             <span ng-switch-when="form" ng-switch="field.formType(data)">
                 <input ng-switch-when="text" class="input" type="text" ng-model="vm.formModel[data[vm.track]]"/>
-                <input ng-switch-when="file" class="input" type="file" ng-model="vm.formModel[data[vm.track]]" select-ng-files multiple/>
+                <input ng-switch-when="file" class="input" type="file" id="{{data[vm.track]}}" />
                 <textarea ng-switch-when="textarea" class="textarea" rows="10" cols="30" ng-model="vm.formModel[data[vm.track]]"></textarea>
             </span>
             <span ng-switch-default title="{{field.tips?field.tips(data):''}}">{{data[field.key]}}</span>

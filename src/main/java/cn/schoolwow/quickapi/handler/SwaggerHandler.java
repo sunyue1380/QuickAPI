@@ -22,7 +22,7 @@ public class SwaggerHandler extends AbstractHandler{
     }
 
     @Override
-    public APIController getApiController(Class clazz) {
+    public APIController getApiController(Class clazz, APIMicroService apiMicroService) {
         return null;
     }
 

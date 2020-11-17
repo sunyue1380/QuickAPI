@@ -1,9 +1,6 @@
 package cn.schoolwow.quickapi.handler;
 
-import cn.schoolwow.quickapi.domain.API;
-import cn.schoolwow.quickapi.domain.APIController;
-import cn.schoolwow.quickapi.domain.APIEntity;
-import cn.schoolwow.quickapi.domain.APIField;
+import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.util.QuickAPIConfig;
 import cn.schoolwow.quickdao.annotation.Comment;
 import cn.schoolwow.quickdao.annotation.Constraint;
@@ -27,7 +24,7 @@ public class QuickDAOHandler extends AbstractHandler{
     }
 
     @Override
-    public APIController getApiController(Class clazz) {
+    public APIController getApiController(Class clazz, APIMicroService apiMicroService) {
         return null;
     }
 

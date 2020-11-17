@@ -1,23 +1,5 @@
 app.register.controller("settingController", function ($scope, $rootScope, $storageService) {
     $scope.settings = $storageService.settings;
-    if(!$scope.settings){
-        $scope.settings = {
-            //显示接口测试界面
-            "showTestView":false,
-            //显示实体类信息
-            "showEntity":false,
-            //显示接口实体类信息
-            "showAPIEntity":false,
-            //显示最近使用历史记录
-            "showRecentUsed":false,
-            //全局头部
-            "globalHeaders":[],
-            //环境列表
-            "environments":[],
-            //当前环境
-            "currentEnvironment":null
-        };
-    }
     $scope.$watch("settings",function(newValue,oldValue){
         $storageService.settings = newValue;
     },true);
@@ -230,6 +212,15 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
                 if(confirm("确认清空收藏记录列表吗?")){
                     $storageService.collectionList = [];
                     alert("清空完成!");
+                }
+            }
+        },
+        {
+            "name":"清空所有数据",
+            "click":function(){
+                if(confirm("确认清空所有数据吗?")){
+                    localStorage.removeItem(location.host+location.pathname);
+                    location.reload();
                 }
             }
         },

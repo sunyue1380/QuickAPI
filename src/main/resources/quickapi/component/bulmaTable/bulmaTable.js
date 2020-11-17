@@ -4,18 +4,6 @@ app.register.filter('trustAsHtml', function ($sce) {
     };
 });
 
-app.register.directive("selectNgFiles", function() {
-    return {
-        require: "ngModel",
-        link: function postLink(scope,elem,attrs,ngModel) {
-            elem.on("change", function(e) {
-                var files = elem[0].files;
-                ngModel.$setViewValue(files);
-            })
-        }
-    }
-});
-
 app.register.component("bulmaTable",{
     //template和templateUrl二选一
     // template: ,

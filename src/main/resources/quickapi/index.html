@@ -61,7 +61,7 @@
                 接口列表
             </p>
             <ul class="menu-list">
-                <li ng-repeat="apiController in apiDocument.apiControllerList track by apiController.name" ng-show="showApiController(apiController);" title="{{apiController.className}}">
+                <li ng-repeat="apiController in apiDocument.apiControllerList track by apiController.className" ng-show="showApiController(apiController);" title="{{apiController.className}}">
                     <s ng-show="apiController.deprecated">{{apiController.name}}
                         <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
                     </s>
@@ -93,7 +93,7 @@
 <script src="js/script.min.js"></script>
 <script src="js/angular.min.js"></script>
 <script src="js/angular-ui-router.min.js"></script>
-<script src="api.js"></script>
+<script src="generateAPI.js"></script>
 <script src="index.js"></script>
 <textarea id="textarea" style="width: 1px;height: 1px;"></textarea>
 </body>

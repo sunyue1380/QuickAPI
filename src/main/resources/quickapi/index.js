@@ -289,6 +289,25 @@ app.run(function ($rootScope,$state,$storageService,$http) {
         $storageService.recentUsedList = [];
     }
     $rootScope.recentUsedList = $storageService.recentUsedList;
+    let settings = $storageService.settings;
+    if(null==settings){
+        $storageService.settings = {
+            //显示接口测试界面
+            "showTestView":false,
+            //显示实体类信息
+            "showEntity":false,
+            //显示接口实体类信息
+            "showAPIEntity":false,
+            //显示最近使用历史记录
+            "showRecentUsed":false,
+            //全局头部
+            "globalHeaders":[],
+            //环境列表
+            "environments":[],
+            //当前环境
+            "currentEnvironment":null
+        };
+    }
 });
 
 app.controller("menuController",function($scope,$rootScope,$state,$storageService){
