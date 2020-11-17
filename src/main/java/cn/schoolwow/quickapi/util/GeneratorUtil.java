@@ -2,7 +2,6 @@ package cn.schoolwow.quickapi.util;
 
 import cn.schoolwow.quickapi.domain.*;
 import cn.schoolwow.quickapi.handler.*;
-import cn.schoolwow.quickdao.domain.QuickDAOConfig;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
@@ -139,7 +138,7 @@ public class GeneratorUtil {
         }
         apiDocument.apiControllerList = apiMicroControllerList;
         //比较新旧json文件
-        Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/api.js");
+        Path path = Paths.get(QuickAPIConfig.directory+QuickAPIConfig.url+"/generateAPI.js");
         if(Files.notExists(path)){
             return;
         }

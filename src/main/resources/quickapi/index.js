@@ -48,6 +48,10 @@ app.config(function ($controllerProvider, $compileProvider, $filterProvider, $pr
                         $rootScope.tabMap[$stateParams.name] = angular.copy($stateParams);
                         $rootScope.tabMap[$stateParams.name]["tabName"]="文档设置";
                     }break;
+                    case "collect":{
+                        $rootScope.tabMap[$stateParams.name] = angular.copy($stateParams);
+                        $rootScope.tabMap[$stateParams.name]["tabName"]="收藏管理";
+                    }break;
                     case "entity":{
                         $rootScope.tabMap[$stateParams.name+"_"+$stateParams.entity.className] = angular.copy($stateParams);
                         $rootScope.tabMap[$stateParams.name+"_"+$stateParams.entity.className]["tabName"]=$stateParams.entity.simpleName+($stateParams.entity.description?"("+$stateParams.entity.description+")":'');
@@ -213,7 +217,7 @@ app.run(function ($rootScope,$state,$storageService,$http) {
      * @param api 请求api信息
      * @param request 请求参数信息
      * */
-    $rootScope.executeOnRefresh = function(api,request){
+    $rootScope.executeOnRefresh = function(api,request,callbackFunction){
         let operation = {
             url:api.url
         };
@@ -260,6 +264,11 @@ app.run(function ($rootScope,$state,$storageService,$http) {
         }
         $http(operation).then(function(response){
             console.log(response);
+            //执行回调函数
+            let fn = new Function("data","globalHeaders",callbackFunction.substring(callbackFunction.indexOf("{")+1,callbackFunction.lastIndexOf("}")));
+            let settings = $storageService.settings;
+            fn(response.data,settings.globalHeaders);
+            $storageService.settings = settings;
         },function(error){
             console.log(error);
         }).finally(function(){
@@ -275,7 +284,7 @@ app.run(function ($rootScope,$state,$storageService,$http) {
             for(let j=0;j<saveParameterList.length;j++){
                 if(saveParameterList[j].executeOnRefresh){
                     console.log("[刷新时执行]"+apiStorage.api.url+",name:"+saveParameterList[j].name);
-                    $rootScope.executeOnRefresh(apiStorage.api,saveParameterList[j].request);
+                    $rootScope.executeOnRefresh(apiStorage.api,saveParameterList[j].request,apiStorage.callbackFunction);
                 }
             }
         }

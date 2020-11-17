@@ -24,12 +24,13 @@
             <ul class="menu-list">
                 <li><a ui-sref="menu({name:'history',api:null})" ng-class="{'is-active':currentViewName=='history'}">文档历史</a></li>
                 <li><a ui-sref="menu({name:'setting',api:null})" ng-class="{'is-active':currentViewName=='setting'}">文档设置</a></li>
+                <li><a ui-sref="menu({name:'collect',api:null})" ng-class="{'is-active':currentViewName=='collect'}">收藏管理</a></li>
             </ul>
             <p class="menu-label" ng-show="collectionList.length>0">
                 收藏列表
             </p>
             <ul class="menu-list" ng-show="collectionList.length>0">
-                <li ng-repeat="api in collectionList track by api.url">
+                <li ng-repeat="api in collectionList track by api.methods[0]+api.url">
                     <a ui-sref="menu({name:'api',api:api})" ng-class="{'is-active':currentViewName=='api'&&currentAPI==api}" title="{{api.url}}">
                         <s ng-show="api.deprecated">{{api.name}}</s>
                         <span ng-show="!api.deprecated">{{api.name}}</span>
@@ -40,7 +41,7 @@
                 最近使用
             </p>
             <ul class="menu-list" ng-show="storageService.settings.showRecentUsed&&recentUsedList.length>0">
-                <li ng-repeat="api in recentUsedList track by api.url">
+                <li ng-repeat="api in recentUsedList track by api.methods[0]+api.url">
                     <a ui-sref="menu({name:'api',api:api})" ng-class="{'is-active':currentViewName=='api'&&currentAPI==api}" title="{{api.url}}">
                         <s ng-show="api.deprecated">{{api.name}}</s>
                         <span ng-show="!api.deprecated">{{api.name}}</span>
@@ -69,7 +70,7 @@
                         <span class="tag is-info is-small">{{apiController.apiList.length}}</span>
                     </p>
                     <ul>
-                        <li ng-repeat="api in apiController.apiList track by api.url">
+                        <li ng-repeat="api in apiController.apiList track by api.methods[0]+api.url">
                             <a ui-sref="menu({name:'api',api:api})" ng-class="{'is-active':currentViewName=='api'&&currentAPI==api}" ng-show="showApi(apiController,api);" title="{{api.url}}">
                                 <s ng-show="api.deprecated">{{api.name}}</s>
                                 <span ng-show="!api.deprecated">{{api.name}}</span>

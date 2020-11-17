@@ -1,6 +1,8 @@
 package cn.schoolwow.quickapi.domain;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**API更新历史*/
 public class APIHistory {

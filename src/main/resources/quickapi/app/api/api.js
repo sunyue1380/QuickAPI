@@ -30,7 +30,8 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
         $scope.apiStorage = {
             "collect":false,
             "request":$scope.getRequest(),
-            "api":$scope.api
+            "api":$scope.api,
+            "callbackFunction":null
         };
     }
     $scope.$watch("apiStorage",function(newValue,oldValue){
@@ -226,7 +227,29 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
         $scope.apiStorage.request = $scope.getRequest();
     };
 
-    //异常表信息
+    /**回调函数*/
+    $scope.initCallbackFunction = function(){
+        $scope.apiStorage.callbackFunction =
+            "/**\n" +
+            "     * API执行结束后回调函数\n" +
+            "     * @param data API返回结果\n" +
+            "     * @param globalHeaders 全局头部数组\n" +
+            "     */\n" +
+            "    function callback(data,globalHeaders){\n" +
+            "        /**console.log(data);*/\n" +
+            "        /**globalHeaders.push*({'key':'key','value':'value','remark':'example'})*/\n" +
+            "    }";
+    };
+    if(typeof($scope.apiStorage.callbackFunction)=="undefined"||$scope.apiStorage.callbackFunction==null){
+        $scope.initCallbackFunction();
+    }
+    $scope.resetCallbackFunction = function(){
+        if(confirm("确认重置回调函数吗?")){
+            $scope.initCallbackFunction();
+        }
+    };
+
+    /**异常表信息*/
     $scope.exceptionFields = [
         {
             "key":"className",
@@ -345,6 +368,15 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
                 if(response.data.length>0){
                     $scope.responseView.keys = Object.keys($scope.response.data[0]);
                 }
+            }
+            //执行回调函数
+            try {
+                let fn = new Function("data","globalHeaders",$scope.apiStorage.callbackFunction.substring($scope.apiStorage.callbackFunction.indexOf("{")+1,$scope.apiStorage.callbackFunction.lastIndexOf("}")));
+                let settings = $storageService.settings;
+                fn(response.data,settings.globalHeaders);
+                $storageService.settings = settings;
+            }catch (e) {
+                console.error(e);
             }
         },function(error){
             $scope.response = error;

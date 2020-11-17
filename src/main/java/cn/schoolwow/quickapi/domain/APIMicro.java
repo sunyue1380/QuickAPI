@@ -1,7 +1,5 @@
 package cn.schoolwow.quickapi.domain;
 
-import cn.schoolwow.quickapi.domain.APIMicroService;
-
 import java.net.URL;
 import java.util.function.Predicate;
 

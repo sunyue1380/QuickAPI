@@ -1,0 +1,11 @@
+<section class="section" ng-controller="collectController">
+    <div class="container">
+        <h1 class="title">收藏管理</h1>
+        <h2 class="subtitle">
+            收藏列表管理
+        </h2>
+        <bulma-table fields="collectFields" list="collectionList" ng-show="collectionList.length>0"></bulma-table>
+    </div>
+
+    <button-list buttons="buttonList"></button-list>
+</section>

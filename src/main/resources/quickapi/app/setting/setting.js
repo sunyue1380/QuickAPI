@@ -227,7 +227,12 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
         {
             "name":"导出数据",
             "click":function(){
-                $rootScope.copyToClipBoard(JSON.stringify($storageService));
+                let keys = Object.getOwnPropertyNames($storageService);
+                let exportData = {};
+                for(let i=0;i<keys.length;i++){
+                    exportData[keys[i]] = $storageService[keys[i]];
+                }
+                $rootScope.copyToClipBoard(JSON.stringify(exportData));
                 alert("数据已经复制到剪贴板上!");
             }
         },
@@ -248,26 +253,6 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
     ];
 
     $scope.settingButtons = [
-        {
-            "show":function(){
-                return !$scope.settings.showTestView;
-            },
-            "class":"is-primary",
-            "name":"显示接口测试界面",
-            "click":function(){
-                $scope.settings.showTestView = true;
-            }
-        },
-        {
-            "show":function(){
-                return $scope.settings.showTestView;
-            },
-            "class":"is-danger",
-            "name":"隐藏接口测试界面",
-            "click":function(){
-                $scope.settings.showTestView = false;
-            }
-        },
         {
             "show":function(){
                 return !$scope.settings.showAPIEntity;

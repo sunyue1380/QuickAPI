@@ -14,7 +14,7 @@
                     {{button.name}}
                 </button>
             </div>
-            <span ng-switch-when="format" ng-bind-html="field.formatter(data)" title="{{field.tips?field.tips(data):''}}">
+            <span ng-switch-when="format" ng-bind-html="field.formatter(data)|trustAsHtml" title="{{field.tips?field.tips(data):''}}">
             </span>
             <span ng-switch-when="form" ng-switch="field.formType(data)">
                 <input ng-switch-when="text" class="input" type="text" ng-model="vm.formModel[data[vm.track]]"/>

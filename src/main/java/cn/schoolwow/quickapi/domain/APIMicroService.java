@@ -96,6 +96,7 @@ public class APIMicroService implements APIMicro {
      * @param pomFilePath pom.xml路径
      * */
     public APIMicroService pom(String pomFilePath) {
+        logger.debug("[解析pom文件]路径:{}",pomFilePath);
         //查看Maven环境变量是否设置
         String mavenHome = System.getenv("MAVEN_HOME");
         if(StringUtils.isEmpty(mavenHome)){
@@ -107,6 +108,7 @@ public class APIMicroService implements APIMicro {
             throw new IllegalArgumentException("pom.xml文件不存在!路径:"+pomFilePath);
         }
         InvocationRequest request = new DefaultInvocationRequest();
+        request.setBatchMode(true);
         request.setPomFile(pomFile);
         request.setGoals(Arrays.asList("dependency:list"));
         Properties properties = new Properties();
@@ -129,6 +131,7 @@ public class APIMicroService implements APIMicro {
                 String jarPath = lines.get(i).substring(lines.get(i).lastIndexOf(":")+1);
                 classPath(new File(jarPath).toURL());
             }
+            Files.deleteIfExists(path);
         }catch (IOException |MavenInvocationException e){
             e.printStackTrace();
         }
