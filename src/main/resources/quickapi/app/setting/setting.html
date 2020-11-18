@@ -1,5 +1,15 @@
 <section class="section" ng-controller="settingController">
     <div class="container">
+        <h1 class="title">nginx配置</h1>
+        <h2 class="subtitle">
+            nginx配置文件示例
+        </h2>
+        <textarea class="textarea is-primary" readonly cols="100" rows="15" ng-model="nginxConf"></textarea>
+    </div>
+
+    <div class="block"></div>
+
+    <div class="container">
         <h1 class="title">全局头部</h1>
         <h2 class="subtitle">
             设置头部字段,这些头部字段将会在执行请求时添加到请求头.

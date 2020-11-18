@@ -233,11 +233,11 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
             "/**\n" +
             "     * API执行结束后回调函数\n" +
             "     * @param data API返回结果\n" +
-            "     * @param globalHeaders 全局头部数组\n" +
+            "     * @param globalHeaders 全局头部对象格式\n" +
             "     */\n" +
             "    function callback(data,globalHeaders){\n" +
             "        /**console.log(data);*/\n" +
-            "        /**globalHeaders.push*({'key':'key','value':'value','remark':'example'})*/\n" +
+            "        /**globalHeaders.push*({'key':'key','value':'value','remark':''example})*/\n" +
             "    }";
     };
     if(typeof($scope.apiStorage.callbackFunction)=="undefined"||$scope.apiStorage.callbackFunction==null){
@@ -370,14 +370,10 @@ app.register.controller("apiController", function ($scope, $rootScope, $state, $
                 }
             }
             //执行回调函数
-            try {
-                let fn = new Function("data","globalHeaders",$scope.apiStorage.callbackFunction.substring($scope.apiStorage.callbackFunction.indexOf("{")+1,$scope.apiStorage.callbackFunction.lastIndexOf("}")));
-                let settings = $storageService.settings;
-                fn(response.data,settings.globalHeaders);
-                $storageService.settings = settings;
-            }catch (e) {
-                console.error(e);
-            }
+            let fn = new Function("data","globalHeaders",$scope.apiStorage.callbackFunction.substring($scope.apiStorage.callbackFunction.indexOf("{")+1,$scope.apiStorage.callbackFunction.lastIndexOf("}")));
+            let settings = $storageService.settings;
+            fn(response.data,settings.globalHeaders);
+            $storageService.settings = settings;
         },function(error){
             $scope.response = error;
             $scope.responseJSON = JSON.stringify(error.data,null,4);

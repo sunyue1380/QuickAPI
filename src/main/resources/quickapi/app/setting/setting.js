@@ -1,4 +1,35 @@
 app.register.controller("settingController", function ($scope, $rootScope, $storageService) {
+    $scope.nginxConf = "http {\n" +
+        "    include       mime.types;\n" +
+        "    default_type  application/octet-stream;\n" +
+        "    sendfile        on;\n" +
+        "    keepalive_timeout  65;\n" +
+        "\n" +
+        "    server {\n" +
+        "        listen       80;\n" +
+        "        server_name  localhost;\n" +
+        "\t\t\n" +
+        "        client_max_body_size 20m;\n" +
+        "        location ^~/quickapi/ {\n" +
+        "            add_header Access-Control-Allow-Origin *;\n" +
+        "            add_header Access-Control-Allow-Headers \"Origin, X-Requested-With, Content-Type, Accept\";\n" +
+        "            add_header Access-Control-Allow-Methods \"GET, POST, OPTIONS\";\n" +
+        "\n" +
+        "            proxy_set_header Host $host;\n" +
+        "            proxy_set_header X-Real-IP $remote_addr;\n" +
+        "            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n" +
+        "            proxy_set_header X-NginX-Proxy true;\n" +
+        "\n" +
+        "            proxy_connect_timeout 300;\n" +
+        "            proxy_send_timeout 300;\n" +
+        "            proxy_read_timeout 300;\n" +
+        "            send_timeout  300;\n" +
+        "\n" +
+        "            proxy_pass http://127.0.0.1:8080/quickapi/;\n" +
+        "        }\n" +
+        "    }\n" +
+        "}";
+
     $scope.settings = $storageService.settings;
     $scope.$watch("settings",function(newValue,oldValue){
         $storageService.settings = newValue;
@@ -93,9 +124,7 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
     ];
 
     //环境设置
-    $scope.environment = {
-        "mode":"0"
-    };
+    $scope.environment = {};
     $scope.addEnvironmentFields = [
         {
             "label":"名称",
@@ -114,15 +143,6 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
             "placeholder":"请带上http(s)前缀,例如http://127.0.0.1:9000"
         },
         {
-            "label":"模式",
-            "type":"select",
-            "options":{
-                "0":"直连",
-            },
-            "model":"mode",
-            "tips":"直连:直接发送给目标机器,需要目标机器支持跨域请求"
-        },
-        {
             "label":"",
             "type":"buttons",
             "buttons":[
@@ -130,7 +150,20 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
                     "name":"添加环境",
                     "class":"'is-primary'",
                     "click":function(environment){
-                        $scope.settings.environments.push(environment);
+                        if(typeof(environment.name)=="undefined"||typeof(environment.address)=="undefined"){
+                            return;
+                        }
+                        if(null==environment.name||environment.name===""||null==environment.address||environment.address===""){
+                            return;
+                        }
+                        let exist = $scope.settings.environments.some(e=> {
+                            if (environment.name === e.name) {
+                                return true;
+                            }
+                        });
+                        if(!exist){
+                            $scope.settings.environments.push(environment);
+                        }
                     }
                 }
             ]
@@ -145,17 +178,6 @@ app.register.controller("settingController", function ($scope, $rootScope, $stor
         {
             "key": "address",
             "value": "地址"
-        },
-        {
-            "key": "mode",
-            "value": "模式",
-            "type":"format",
-            "formatter":function(data){
-                switch(data.mode){
-                    case "0":return "直连";
-                    default:return "未知";
-                }
-            }
         },
         {
             "key": "operation",
